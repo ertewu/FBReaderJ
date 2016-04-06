@@ -19,92 +19,120 @@
 
 package org.geometerplus.android.fbreader.tree;
 
-import java.util.*;
-
-import android.widget.BaseAdapter;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
 
 import org.geometerplus.fbreader.tree.FBTree;
 
+import zystudio.debug.FBDebug;
+import android.util.Log;
+import android.widget.BaseAdapter;
+
 public abstract class TreeAdapter extends BaseAdapter {
-	private final TreeActivity myActivity;
-	private final List<FBTree> myItems;
 
-	protected TreeAdapter(TreeActivity activity) {
-		myActivity = activity;
-		myItems = Collections.synchronizedList(new ArrayList<FBTree>());
-		activity.setListAdapter(this);
-	}
+    private final TreeActivity myActivity;
+    private final List<FBTree> myItems;
 
-	protected TreeActivity getActivity() {
-		return myActivity;
-	}
+    protected TreeAdapter(TreeActivity activity) {
+        myActivity = activity;
+        myItems = Collections.synchronizedList(new ArrayList<FBTree>());
+        activity.setListAdapter(this);
+    }
 
-	public void remove(final FBTree item) {
-		myActivity.runOnUiThread(new Runnable() {
-			public void run() {
-				myItems.remove(item);
-				notifyDataSetChanged();
-			}
-		});
-	}
+    protected TreeActivity getActivity() {
+        return myActivity;
+    }
 
-	public void add(final FBTree item) {
-		myActivity.runOnUiThread(new Runnable() {
-			public void run() {
-				myItems.add(item);
-				notifyDataSetChanged();
-			}
-		});
-	}
+    public void remove(final FBTree item) {
+       FBDebug.logLibTree("TreeAdapter.remove"); 
+        myActivity.runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                myItems.remove(item);
+                notifyDataSetChanged();
+            }
+        });
+    }
 
-	public void add(final int index, final FBTree item) {
-		myActivity.runOnUiThread(new Runnable() {
-			public void run() {
-				myItems.add(index, item);
-				notifyDataSetChanged();
-			}
-		});
-	}
+    public void add(final FBTree item) {
+       FBDebug.logLibTree("TreeAdapter.add()"); 
+        myActivity.runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                myItems.add(item);
+                notifyDataSetChanged();
+            }
+        });
+    }
 
-	public void replaceAll(final Collection<FBTree> items, final boolean invalidateViews) {
-		myActivity.runOnUiThread(new Runnable() {
-			public void run() {
-				synchronized (myItems) {
-					myItems.clear();
-					myItems.addAll(items);
-				}
-				notifyDataSetChanged();
-				if (invalidateViews) {
-					myActivity.getListView().invalidateViews();
-				}
-			}
-		});
-	}
+    public void add(final int index, final FBTree item) {
+       FBDebug.logLibTree("TreeAdapter.add(index,FBTree)"); 
+        myActivity.runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                myItems.add(index, item);
+                notifyDataSetChanged();
+            }
+        });
+    }
 
-	public int getCount() {
-		return myItems.size();
-	}
+    public void replaceAll(final Collection<FBTree> items, final boolean invalidateViews) {
+       FBDebug.logLibTree("TreeAdapter.replaceAll(items, invalidateViews():"+items.size()+"|"+invalidateViews); 
+       for(FBTree myItem:items){
+           FBDebug.logLibTree("TreeAdapter.replaceAll() each item:"+myItem.getName()); 
+       }
+        myActivity.runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                synchronized (myItems) {
+                    myItems.clear();
+                    myItems.addAll(items);
+                }
+                notifyDataSetChanged();
+                if (invalidateViews) {
+                    myActivity.getListView().invalidateViews();
+                }
+            }
+        });
+    }
 
-	public FBTree getItem(int position) {
-		return myItems.get(position);
-	}
+    @Override
+    public void notifyDataSetChanged() {
+       FBDebug.logLibTree("TreeAdapter.notifyDataSetChanged"); 
+        Log.i("ZYStudio", "notifyDataSetChanged occured");
+        super.notifyDataSetChanged();
+    }
 
-	public long getItemId(int position) {
-		return position;
-	}
+    @Override
+    public int getCount() {
+        return myItems.size();
+    }
 
-	public int getIndex(FBTree item) {
-		return myItems.indexOf(item);
-	}
+    @Override
+    public FBTree getItem(int position) {
+        return myItems.get(position);
+    }
 
-	public FBTree getFirstSelectedItem() {
-		synchronized (myItems) {
-			for (FBTree t : myItems) {
-				if (myActivity.isTreeSelected(t)) {
-					return t;
-				}
-			}
-		}
-		return null;
-	}
+    @Override
+    public long getItemId(int position) {
+        return position;
+    }
+
+    public int getIndex(FBTree item) {
+        return myItems.indexOf(item);
+    }
+
+    public FBTree getFirstSelectedItem() {
+        synchronized (myItems) {
+            for (FBTree t : myItems) {
+                if (myActivity.isTreeSelected(t)) {
+                    return t;
+                }
+            }
+        }
+        return null;
+    }
+
 }

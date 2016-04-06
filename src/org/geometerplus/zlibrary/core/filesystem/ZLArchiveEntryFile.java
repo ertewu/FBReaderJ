@@ -19,11 +19,13 @@
 
 package org.geometerplus.zlibrary.core.filesystem;
 
-import java.util.*;
+import java.util.Collections;
+import java.util.List;
 
 import org.geometerplus.zlibrary.core.filesystem.tar.ZLTarEntryFile;
 
 public abstract class ZLArchiveEntryFile extends ZLFile {
+    
 	public static String normalizeEntryName(String entryName) {
 		while (entryName.startsWith("./")) {
 			entryName = entryName.substring(2);

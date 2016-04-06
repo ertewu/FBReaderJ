@@ -19,242 +19,253 @@
 
 package org.geometerplus.fbreader.network.tree;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.LinkedList;
+import java.util.ListIterator;
+import java.util.Set;
 
+import org.geometerplus.fbreader.network.INetworkLink;
+import org.geometerplus.fbreader.network.ISyncNetworkLink;
+import org.geometerplus.fbreader.network.NetworkBookItem;
+import org.geometerplus.fbreader.network.NetworkCatalogItem;
+import org.geometerplus.fbreader.network.NetworkItem;
+import org.geometerplus.fbreader.network.NetworkLibrary;
+import org.geometerplus.fbreader.network.NetworkTree;
+import org.geometerplus.fbreader.network.SearchItem;
+import org.geometerplus.fbreader.network.SingleCatalogSearchItem;
+import org.geometerplus.fbreader.network.urlInfo.UrlInfo;
+import org.geometerplus.fbreader.tree.FBTree;
 import org.geometerplus.zlibrary.core.image.ZLImage;
 import org.geometerplus.zlibrary.core.network.QuietNetworkContext;
 import org.geometerplus.zlibrary.core.network.ZLNetworkContext;
 import org.geometerplus.zlibrary.core.util.ZLBoolean3;
 
-import org.geometerplus.fbreader.tree.FBTree;
-import org.geometerplus.fbreader.network.*;
-import org.geometerplus.fbreader.network.urlInfo.UrlInfo;
-
 public class NetworkCatalogTree extends NetworkTree {
-	private final INetworkLink myLink;
 
-	public final NetworkCatalogItem Item;
-	protected final ArrayList<NetworkCatalogItem> myChildrenItems =
-		new ArrayList<NetworkCatalogItem>();
-	private volatile int myLastTotalChildren = -1;
+    private final INetworkLink myLink;
 
-	private long myLoadedTime = -1;
+    public final NetworkCatalogItem Item;
+    
+    protected final ArrayList<NetworkCatalogItem> myChildrenItems = new ArrayList<NetworkCatalogItem>();
+    
+    private volatile int myLastTotalChildren = -1;
 
-	public NetworkCatalogTree(NetworkTree parent, INetworkLink link, NetworkCatalogItem item, int position) {
-		super(parent, position);
-		myLink = link;
-		if (item == null) {
-			throw new IllegalArgumentException("item cannot be null");
-		}
-		Item = item;
-	}
+    private long myLoadedTime = -1;
 
-	@Override
-	public INetworkLink getLink() {
-		return myLink;
-	}
+    public NetworkCatalogTree(NetworkTree parent, INetworkLink link, NetworkCatalogItem item, int position) {
+        super(parent, position);
+        myLink = link;
+        if (item == null) {
+            throw new IllegalArgumentException("item cannot be null");
+        }
+        Item = item;
+    }
 
-	public ZLBoolean3 getVisibility() {
-		return Item.getVisibility();
-	}
+    @Override
+    public INetworkLink getLink() {
+        return myLink;
+    }
 
-	public final boolean canBeOpened() {
-		return Item.canBeOpened();
-	}
+    public ZLBoolean3 getVisibility() {
+        return Item.getVisibility();
+    }
 
-	private SearchItem mySearchItem;
+    public final boolean canBeOpened() {
+        return Item.canBeOpened();
+    }
 
-	protected void addSpecialTrees() {
-		if ((Item.getFlags() & NetworkCatalogItem.FLAG_ADD_SEARCH_ITEM) != 0) {
-			final INetworkLink link = getLink();
-			if (link != null && link.getUrl(UrlInfo.Type.Search) != null) {
-				if (mySearchItem == null) {
-					mySearchItem = new SingleCatalogSearchItem(link);
-				}
-				myChildrenItems.add(mySearchItem);
-				new SearchCatalogTree(this, mySearchItem);
-			}
-		}
-	}
+    private SearchItem mySearchItem;
 
-	synchronized void addItem(final NetworkItem item) {
-		if (!hasChildren() && !isSingleSyncItem(item)) {
-			addSpecialTrees();
-		}
-		if (item instanceof NetworkCatalogItem) {
-			myChildrenItems.add((NetworkCatalogItem)item);
-		}
-		myUnconfirmedTrees.add(NetworkTreeFactory.createNetworkTree(this, item));
-		NetworkLibrary.Instance().fireModelChangedEvent(NetworkLibrary.ChangeListener.Code.SomeCode);
-	}
+    protected void addSpecialTrees() {
+        if ((Item.getFlags() & NetworkCatalogItem.FLAG_ADD_SEARCH_ITEM) != 0) {
+            final INetworkLink link = getLink();
+            if (link != null && link.getUrl(UrlInfo.Type.Search) != null) {
+                if (mySearchItem == null) {
+                    mySearchItem = new SingleCatalogSearchItem(link);
+                }
+                myChildrenItems.add(mySearchItem);
+                new SearchCatalogTree(this, mySearchItem);
+            }
+        }
+    }
 
-	@Override
-	public String getName() {
-		final CharSequence title = Item.Title;
-		return title != null ? String.valueOf(title) : "";
-	}
+    synchronized void addItem(final NetworkItem item) {
+        if (!hasChildren() && !isSingleSyncItem(item)) {
+            addSpecialTrees();
+        }
+        if (item instanceof NetworkCatalogItem) {
+            myChildrenItems.add((NetworkCatalogItem) item);
+        }
+        myUnconfirmedTrees.add(NetworkTreeFactory.createNetworkTree(this, item));
+        NetworkLibrary.Instance().fireModelChangedEvent(NetworkLibrary.ChangeListener.Code.SomeCode);
+    }
 
-	@Override
-	public String getSummary() {
-		final CharSequence summary = Item.getSummary();
-		return summary != null ? summary.toString() : "";
-	}
+    @Override
+    public String getName() {
+        final CharSequence title = Item.Title;
+        return title != null ? String.valueOf(title) : "";
+    }
 
-	@Override
-	public String getTreeTitle() {
-		final INetworkLink link = getLink();
-		return link != null ? getName() + " - " + link.getTitle() : getName();
-	}
+    @Override
+    public String getSummary() {
+        final CharSequence summary = Item.getSummary();
+        return summary != null ? summary.toString() : "";
+    }
 
-	@Override
-	protected ZLImage createCover() {
-		return createCover(Item, true);
-	}
+    @Override
+    public String getTreeTitle() {
+        final INetworkLink link = getLink();
+        return link != null ? getName() + " - " + link.getTitle() : getName();
+    }
 
-	public boolean isContentValid() {
-		if (myLoadedTime < 0) {
-			return false;
-		}
-		final int reloadTime = 15 * 60 * 1000; // 15 minutes in milliseconds
-		return System.currentTimeMillis() - myLoadedTime < reloadTime;
-	}
+    @Override
+    protected ZLImage createCover() {
+        return createCover(Item, true);
+    }
 
-	public void updateLoadedTime() {
-		myLoadedTime = System.currentTimeMillis();
-	}
+    public boolean isContentValid() {
+        if (myLoadedTime < 0) {
+            return false;
+        }
+        final int reloadTime = 15 * 60 * 1000; // 15 minutes in milliseconds
+        return System.currentTimeMillis() - myLoadedTime < reloadTime;
+    }
 
-	public void updateVisibility() {
-		final LinkedList<FBTree> toRemove = new LinkedList<FBTree>();
+    public void updateLoadedTime() {
+        myLoadedTime = System.currentTimeMillis();
+    }
 
-		ListIterator<FBTree> nodeIterator = subtrees().listIterator();
-		FBTree currentTree = null;
-		int nodeCount = 0;
+    public void updateVisibility() {
+        final LinkedList<FBTree> toRemove = new LinkedList<FBTree>();
 
-		for (int i = 0; i < myChildrenItems.size(); ++i) {
-			final NetworkCatalogItem currentItem = myChildrenItems.get(i);
-			boolean processed = false;
-			while (currentTree != null || nodeIterator.hasNext()) {
-				if (currentTree == null) {
-					currentTree = nodeIterator.next();
-				}
-				if (!(currentTree instanceof NetworkCatalogTree)) {
-					currentTree = null;
-					++nodeCount;
-					continue;
-				}
-				NetworkCatalogTree child = (NetworkCatalogTree)currentTree;
-				if (child.Item == currentItem) {
-					switch (child.Item.getVisibility()) {
-						case B3_TRUE:
-							child.updateVisibility();
-							break;
-						case B3_FALSE:
-							toRemove.add(child);
-							break;
-						case B3_UNDEFINED:
-							child.clearCatalog();
-							break;
-					}
-					currentTree = null;
-					++nodeCount;
-					processed = true;
-					break;
-				} else {
-					boolean found = false;
-					for (int j = i + 1; j < myChildrenItems.size(); ++j) {
-						if (child.Item == myChildrenItems.get(j)) {
-							found = true;
-							break;
-						}
-					}
-					if (!found) {
-						toRemove.add(currentTree);
-						currentTree = null;
-						++nodeCount;
-					} else {
-						break;
-					}
-				}
-			}
-			final int nextIndex = nodeIterator.nextIndex();
-			if (!processed && NetworkTreeFactory.createNetworkTree(this, currentItem, nodeCount) != null) {
-				++nodeCount;
-				nodeIterator = subtrees().listIterator(nextIndex + 1);
-			}
-		}
+        ListIterator<FBTree> nodeIterator = subtrees().listIterator();
+        FBTree currentTree = null;
+        int nodeCount = 0;
 
-		while (currentTree != null || nodeIterator.hasNext()) {
-			if (currentTree == null) {
-				currentTree = nodeIterator.next();
-			}
-			if (currentTree instanceof NetworkCatalogTree) {
-				toRemove.add(currentTree);
-			}
-			currentTree = null;
-		}
+        for (int i = 0; i < myChildrenItems.size(); ++i) {
+            final NetworkCatalogItem currentItem = myChildrenItems.get(i);
+            boolean processed = false;
+            while (currentTree != null || nodeIterator.hasNext()) {
+                if (currentTree == null) {
+                    currentTree = nodeIterator.next();
+                }
+                if (!(currentTree instanceof NetworkCatalogTree)) {
+                    currentTree = null;
+                    ++nodeCount;
+                    continue;
+                }
+                NetworkCatalogTree child = (NetworkCatalogTree) currentTree;
+                if (child.Item == currentItem) {
+                    switch (child.Item.getVisibility()) {
+                    case B3_TRUE:
+                        child.updateVisibility();
+                        break;
+                    case B3_FALSE:
+                        toRemove.add(child);
+                        break;
+                    case B3_UNDEFINED:
+                        child.clearCatalog();
+                        break;
+                    }
+                    currentTree = null;
+                    ++nodeCount;
+                    processed = true;
+                    break;
+                } else {
+                    boolean found = false;
+                    for (int j = i + 1; j < myChildrenItems.size(); ++j) {
+                        if (child.Item == myChildrenItems.get(j)) {
+                            found = true;
+                            break;
+                        }
+                    }
+                    if (!found) {
+                        toRemove.add(currentTree);
+                        currentTree = null;
+                        ++nodeCount;
+                    } else {
+                        break;
+                    }
+                }
+            }
+            final int nextIndex = nodeIterator.nextIndex();
+            if (!processed && NetworkTreeFactory.createNetworkTree(this, currentItem, nodeCount) != null) {
+                ++nodeCount;
+                nodeIterator = subtrees().listIterator(nextIndex + 1);
+            }
+        }
 
-		for (FBTree tree : toRemove) {
-			tree.removeSelf();
-		}
-	}
+        while (currentTree != null || nodeIterator.hasNext()) {
+            if (currentTree == null) {
+                currentTree = nodeIterator.next();
+            }
+            if (currentTree instanceof NetworkCatalogTree) {
+                toRemove.add(currentTree);
+            }
+            currentTree = null;
+        }
 
-	@Override
-	public void removeTrees(Set<NetworkTree> trees) {
-		for (NetworkTree t : trees) {
-			if (t instanceof NetworkCatalogTree) {
-				myChildrenItems.remove(((NetworkCatalogTree)t).Item);
-			}
-		}
-		super.removeTrees(trees);
-	}
+        for (FBTree tree : toRemove) {
+            tree.removeSelf();
+        }
+    }
 
-	@Override
-	protected String getStringId() {
-		return Item.getStringId();
-	}
+    @Override
+    public void removeTrees(Set<NetworkTree> trees) {
+        for (NetworkTree t : trees) {
+            if (t instanceof NetworkCatalogTree) {
+                myChildrenItems.remove(((NetworkCatalogTree) t).Item);
+            }
+        }
+        super.removeTrees(trees);
+    }
 
-	public void startItemsLoader(ZLNetworkContext nc, boolean authenticate, boolean resumeNotLoad) {
-		new CatalogExpander(nc, this, authenticate, resumeNotLoad).start();
-	}
+    @Override
+    protected String getStringId() {
+        return Item.getStringId();
+    }
 
-	public synchronized void clearCatalog() {
-		myChildrenItems.clear();
-		myLastTotalChildren = -1;
-		clear();
-		NetworkLibrary.Instance().fireModelChangedEvent(NetworkLibrary.ChangeListener.Code.SomeCode);
-	}
+    public void startItemsLoader(ZLNetworkContext nc, boolean authenticate, boolean resumeNotLoad) {
+        new CatalogExpander(nc, this, authenticate, resumeNotLoad).start();
+    }
 
-	private final Set<NetworkTree> myUnconfirmedTrees =
-		Collections.synchronizedSet(new HashSet<NetworkTree>());
+    public synchronized void clearCatalog() {
+        myChildrenItems.clear();
+        myLastTotalChildren = -1;
+        clear();
+        NetworkLibrary.Instance().fireModelChangedEvent(NetworkLibrary.ChangeListener.Code.SomeCode);
+    }
 
-	public final void confirmAllItems() {
-		myUnconfirmedTrees.clear();
-	}
+    private final Set<NetworkTree> myUnconfirmedTrees = Collections.synchronizedSet(new HashSet<NetworkTree>());
 
-	public final void removeUnconfirmedItems() {
-		synchronized (myUnconfirmedTrees) {
-			removeTrees(myUnconfirmedTrees);
-		}
-	}
+    public final void confirmAllItems() {
+        myUnconfirmedTrees.clear();
+    }
 
-	public synchronized void loadMoreChildren(int currentTotal) {
-		if (currentTotal == subtrees().size()
-			&& myLastTotalChildren < currentTotal
-			&& !NetworkLibrary.Instance().isLoadingInProgress(this)
-			&& Item.canResumeLoading()) {
-			myLastTotalChildren = currentTotal;
-			startItemsLoader(new QuietNetworkContext(), false, true);
-		}
-	}
+    public final void removeUnconfirmedItems() {
+        synchronized (myUnconfirmedTrees) {
+            removeTrees(myUnconfirmedTrees);
+        }
+    }
 
-	private boolean isSingleSyncItem(NetworkItem item) {
-		if (!(item instanceof NetworkBookItem)) {
-			return false;
-		}
-		final INetworkLink link = getLink();
-		if (!(link instanceof ISyncNetworkLink)) {
-			return false;
-		}
-		return "fbreader:book:network:description".equals(((NetworkBookItem)item).Id);
-	}
+    public synchronized void loadMoreChildren(int currentTotal) {
+        if (currentTotal == subtrees().size() && myLastTotalChildren < currentTotal && !NetworkLibrary.Instance().isLoadingInProgress(this)
+                && Item.canResumeLoading()) {
+            myLastTotalChildren = currentTotal;
+            startItemsLoader(new QuietNetworkContext(), false, true);
+        }
+    }
+
+    private boolean isSingleSyncItem(NetworkItem item) {
+        if (!(item instanceof NetworkBookItem)) {
+            return false;
+        }
+        final INetworkLink link = getLink();
+        if (!(link instanceof ISyncNetworkLink)) {
+            return false;
+        }
+        return "fbreader:book:network:description".equals(((NetworkBookItem) item).Id);
+    }
 }

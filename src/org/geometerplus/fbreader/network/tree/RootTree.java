@@ -19,9 +19,11 @@
 
 package org.geometerplus.fbreader.network.tree;
 
-import org.geometerplus.fbreader.network.*;
+import org.geometerplus.fbreader.network.NetworkLibrary;
+import org.geometerplus.fbreader.network.NetworkTree;
 
 public final class RootTree extends NetworkTree {
+    
 	public final boolean IsFake;
 
 	private final String myId;

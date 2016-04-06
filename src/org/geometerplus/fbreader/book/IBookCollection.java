@@ -26,79 +26,115 @@ import org.geometerplus.zlibrary.core.image.ZLImage;
 import org.geometerplus.zlibrary.text.view.ZLTextFixedPosition;
 import org.geometerplus.zlibrary.text.view.ZLTextPosition;
 
+/**
+ * 这里的接口，多半和LibraryInterface.aidl是一样的，只是LiraryInterface是对LibraryService的对外接口，
+ * 是服务提供方的 而这里的接口是调用者的动作抽象。　其实也没什么办法合一吧，毕竟LibraryInterface是aidl的，没有java形式的。
+ * 就是想用一个抽象接口也不行
+ * 
+ */
 public interface IBookCollection {
-	public enum Status {
-		NotStarted(false),
-		Started(false),
-		Succeeded(true),
-		Failed(true);
 
-		public final Boolean IsCompleted;
+    public enum Status {
 
-		Status(boolean completed) {
-			IsCompleted = completed;
-		}
-	}
+        NotStarted(false), Started(false), Succeeded(true), Failed(true);
 
-	public interface Listener {
-		void onBookEvent(BookEvent event, Book book);
-		void onBuildEvent(Status status);
-	}
+        public final Boolean IsCompleted;
 
-	public void addListener(Listener listener);
-	public void removeListener(Listener listener);
+        Status(boolean completed) {
+            IsCompleted = completed;
+        }
 
-	Status status();
+    }
 
-	int size();
+    public interface Listener {
 
-	List<Book> books(BookQuery query);
-	boolean hasBooks(Filter filter);
-	List<String> titles(BookQuery query);
+        void onBookEvent(BookEvent event, Book book);
 
-	List<Book> recentlyOpenedBooks(int count);
-	List<Book> recentlyAddedBooks(int count);
-	Book getRecentBook(int index);
-	void addToRecentlyOpened(Book book);
-	void removeFromRecentlyOpened(Book book);
+        void onBuildEvent(Status status);
+    }
 
-	Book getBookByFile(String path);
-	Book getBookByFile(ZLFile file);
-	Book getBookById(long id);
-	Book getBookByUid(UID uid);
-	Book getBookByHash(String hash);
+    public void addListener(Listener listener);
 
-	List<String> labels();
-	List<Author> authors();
-	boolean hasSeries();
-	List<String> series();
-	List<Tag> tags();
-	List<String> firstTitleLetters();
+    public void removeListener(Listener listener);
 
-	boolean saveBook(Book book);
-	boolean canRemoveBook(Book book, boolean deleteFromDisk);
-	void removeBook(Book book, boolean deleteFromDisk);
+    Status status();
 
-	String getHash(Book book, boolean force);
-	void setHash(Book book, String hash);
+    int size();
 
-	ZLTextFixedPosition.WithTimestamp getStoredPosition(long bookId);
-	void storePosition(long bookId, ZLTextPosition position);
+    List<Book> books(BookQuery query);
 
-	boolean isHyperlinkVisited(Book book, String linkId);
-	void markHyperlinkAsVisited(Book book, String linkId);
+    boolean hasBooks(Filter filter);
 
-	ZLImage getCover(Book book, int maxWidth, int maxHeight);
-	String getCoverUrl(Book book);
-	String getDescription(Book book);
+    List<String> titles(BookQuery query);
 
-	List<Bookmark> bookmarks(BookmarkQuery query);
-	void saveBookmark(Bookmark bookmark);
-	void deleteBookmark(Bookmark bookmark);
+    List<Book> recentlyOpenedBooks(int count);
 
-	HighlightingStyle getHighlightingStyle(int styleId);
-	List<HighlightingStyle> highlightingStyles();
-	void saveHighlightingStyle(HighlightingStyle style);
+    List<Book> recentlyAddedBooks(int count);
 
-	void rescan(String path);
+    Book getRecentBook(int index);
+
+    void addToRecentlyOpened(Book book);
+
+    void removeFromRecentlyOpened(Book book);
+
+    Book getBookByFile(String path);
+
+    Book getBookByFile(ZLFile file);
+
+    Book getBookById(long id);
+
+    Book getBookByUid(UID uid);
+
+    Book getBookByHash(String hash);
+
+    List<String> labels();
+
+    List<Author> authors();
+
+    boolean hasSeries();
+
+    List<String> series();
+
+    List<Tag> tags();
+
+    List<String> firstTitleLetters();
+
+    boolean saveBook(Book book);
+
+    boolean canRemoveBook(Book book, boolean deleteFromDisk);
+
+    void removeBook(Book book, boolean deleteFromDisk);
+
+    String getHash(Book book, boolean force);
+
+    void setHash(Book book, String hash);
+
+    ZLTextFixedPosition.WithTimestamp getStoredPosition(long bookId);
+
+    void storePosition(long bookId, ZLTextPosition position);
+
+    boolean isHyperlinkVisited(Book book, String linkId);
+
+    void markHyperlinkAsVisited(Book book, String linkId);
+
+    ZLImage getCover(Book book, int maxWidth, int maxHeight);
+
+    String getCoverUrl(Book book);
+
+    String getDescription(Book book);
+
+    List<Bookmark> bookmarks(BookmarkQuery query);
+
+    void saveBookmark(Bookmark bookmark);
+
+    void deleteBookmark(Bookmark bookmark);
+
+    HighlightingStyle getHighlightingStyle(int styleId);
+
+    List<HighlightingStyle> highlightingStyles();
+
+    void saveHighlightingStyle(HighlightingStyle style);
+
+    void rescan(String path);
+
 }

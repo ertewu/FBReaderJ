@@ -19,25 +19,46 @@
 
 package org.geometerplus.fbreader.fbreader;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.TreeSet;
 
+import org.geometerplus.fbreader.bookmodel.BookModel;
+import org.geometerplus.fbreader.bookmodel.FBHyperlinkType;
+import org.geometerplus.fbreader.bookmodel.TOCTree;
+import org.geometerplus.fbreader.fbreader.options.ColorProfile;
+import org.geometerplus.fbreader.fbreader.options.FooterOptions;
+import org.geometerplus.fbreader.fbreader.options.ImageOptions;
+import org.geometerplus.fbreader.fbreader.options.MiscOptions;
+import org.geometerplus.fbreader.fbreader.options.PageTurningOptions;
+import org.geometerplus.fbreader.fbreader.options.ViewOptions;
 import org.geometerplus.zlibrary.core.filesystem.ZLFile;
 import org.geometerplus.zlibrary.core.filesystem.ZLResourceFile;
 import org.geometerplus.zlibrary.core.fonts.FontEntry;
 import org.geometerplus.zlibrary.core.library.ZLibrary;
 import org.geometerplus.zlibrary.core.util.ZLColor;
 import org.geometerplus.zlibrary.core.view.ZLPaintContext;
-
 import org.geometerplus.zlibrary.text.model.ZLTextModel;
-import org.geometerplus.zlibrary.text.view.*;
+import org.geometerplus.zlibrary.text.view.ExtensionElementManager;
+import org.geometerplus.zlibrary.text.view.ZLTextHighlighting;
+import org.geometerplus.zlibrary.text.view.ZLTextHyperlink;
+import org.geometerplus.zlibrary.text.view.ZLTextHyperlinkRegionSoul;
+import org.geometerplus.zlibrary.text.view.ZLTextImageRegionSoul;
+import org.geometerplus.zlibrary.text.view.ZLTextRegion;
+import org.geometerplus.zlibrary.text.view.ZLTextSelectionCursor;
+import org.geometerplus.zlibrary.text.view.ZLTextVideoRegionSoul;
+import org.geometerplus.zlibrary.text.view.ZLTextView;
+import org.geometerplus.zlibrary.text.view.ZLTextWordRegionSoul;
 import org.geometerplus.zlibrary.text.view.style.ZLTextStyleCollection;
 
-import org.geometerplus.fbreader.bookmodel.BookModel;
-import org.geometerplus.fbreader.bookmodel.FBHyperlinkType;
-import org.geometerplus.fbreader.bookmodel.TOCTree;
-import org.geometerplus.fbreader.fbreader.options.*;
+import zystudio.mylib.utils.LogUtil;
 
 public final class FBView extends ZLTextView {
+    
+    
 	private final FBReaderApp myReader;
 	private final ViewOptions myViewOptions;
 	private final BookElementManager myBookElementManager;
@@ -49,7 +70,8 @@ public final class FBView extends ZLTextView {
 		myBookElementManager = new BookElementManager(this);
 	}
 
-	public void setModel(ZLTextModel model) {
+	@Override
+    public void setModel(ZLTextModel model) {
 		super.setModel(model);
 		if (myFooter != null) {
 			myFooter.resetTOCMarks();
@@ -74,7 +96,9 @@ public final class FBView extends ZLTextView {
 		return myZoneMap;
 	}
 
-	public boolean onFingerSingleTap(int x, int y) {
+    @Override
+    public boolean onFingerSingleTap(int x, int y) {
+        LogUtil.log(TAG, "onFingerSingleTap occured:"+x+"|"+y);
 		if (super.onFingerSingleTap(x, y)) {
 			return true;
 		}
@@ -122,11 +146,14 @@ public final class FBView extends ZLTextView {
 
 	@Override
 	public boolean isDoubleTapSupported() {
-		return myReader.MiscOptions.EnableDoubleTap.getValue();
+		boolean value=myReader.MiscOptions.EnableDoubleTap.getValue();
+        LogUtil.log(TAG, "isDoubleTapSupported occured:"+value);
+        return value;
 	}
 
 	@Override
 	public boolean onFingerDoubleTap(int x, int y) {
+        LogUtil.log(TAG, "onFingerDoubleTap occured:"+x+"|"+y);
 		if (super.onFingerDoubleTap(x, y)) {
 			return true;
 		}
@@ -136,7 +163,9 @@ public final class FBView extends ZLTextView {
 		return true;
 	}
 
-	public boolean onFingerPress(int x, int y) {
+	@Override
+    public boolean onFingerPress(int x, int y) {
+        LogUtil.log(TAG, "onFingerPress occured:"+x+"|"+y);
 		if (super.onFingerPress(x, y)) {
 			return true;
 		}
@@ -177,7 +206,9 @@ public final class FBView extends ZLTextView {
 		myReader.getViewWidget().startManualScrolling(x, y, direction);
 	}
 
-	public boolean onFingerMove(int x, int y) {
+	@Override
+    public boolean onFingerMove(int x, int y) {
+        LogUtil.log(TAG, "onFingerMove occured:"+x+"|"+y);
 		if (super.onFingerMove(x, y)) {
 			return true;
 		}
@@ -207,7 +238,9 @@ public final class FBView extends ZLTextView {
 		return true;
 	}
 
-	public boolean onFingerRelease(int x, int y) {
+	@Override
+    public boolean onFingerRelease(int x, int y) {
+        LogUtil.log(TAG, "onFingerRelease:"+x+"|"+y);
 		if (super.onFingerRelease(x, y)) {
 			return true;
 		}
@@ -233,7 +266,9 @@ public final class FBView extends ZLTextView {
 		return true;
 	}
 
-	public boolean onFingerLongPress(int x, int y) {
+	@Override
+    public boolean onFingerLongPress(int x, int y) {
+        LogUtil.log(TAG, "onFingerLongPress:"+x+"|"+y);
 		if (super.onFingerLongPress(x, y)) {
 			return true;
 		}
@@ -276,7 +311,9 @@ public final class FBView extends ZLTextView {
 		return false;
 	}
 
-	public boolean onFingerMoveAfterLongPress(int x, int y) {
+	@Override
+    public boolean onFingerMoveAfterLongPress(int x, int y) {
+        LogUtil.log(TAG, "onFingerMoveAfterLongPress:"+x+"|"+y);
 		if (super.onFingerMoveAfterLongPress(x, y)) {
 			return true;
 		}
@@ -310,7 +347,9 @@ public final class FBView extends ZLTextView {
 		return true;
 	}
 
-	public boolean onFingerReleaseAfterLongPress(int x, int y) {
+	@Override
+    public boolean onFingerReleaseAfterLongPress(int x, int y) {
+        LogUtil.log(TAG, "onFingerReleaseAfterLongPress:"+x+"|"+y);
 		if (super.onFingerReleaseAfterLongPress(x, y)) {
 			return true;
 		}
@@ -345,7 +384,8 @@ public final class FBView extends ZLTextView {
 		return false;
 	}
 
-	public boolean onTrackballRotated(int diffX, int diffY) {
+	@Override
+    public boolean onTrackballRotated(int diffX, int diffY) {
 		if (diffX == 0 && diffY == 0) {
 			return true;
 		}
@@ -461,15 +501,17 @@ public final class FBView extends ZLTextView {
 	}
 
 	private abstract class Footer implements FooterArea {
-		private Runnable UpdateTask = new Runnable() {
-			public void run() {
+		private final Runnable UpdateTask = new Runnable() {
+			@Override
+            public void run() {
 				myReader.getViewWidget().repaint();
 			}
 		};
 
 		protected ArrayList<TOCTree> myTOCMarks;
 
-		public int getHeight() {
+		@Override
+        public int getHeight() {
 			return myViewOptions.FooterHeight.getValue();
 		}
 
@@ -531,8 +573,8 @@ public final class FBView extends ZLTextView {
 		}
 
 		private List<FontEntry> myFontEntry;
-		private Map<String,Integer> myHeightMap = new HashMap<String,Integer>();
-		private Map<String,Integer> myCharHeightMap = new HashMap<String,Integer>();
+		private final Map<String,Integer> myHeightMap = new HashMap<String,Integer>();
+		private final Map<String,Integer> myCharHeightMap = new HashMap<String,Integer>();
 		protected synchronized int setFont(ZLPaintContext context, int height, boolean bold) {
 			final String family = myViewOptions.getFooterOptions().Font.getValue();
 			if (myFontEntry == null || !family.equals(myFontEntry.get(0).Family)) {
@@ -563,7 +605,8 @@ public final class FBView extends ZLTextView {
 	}
 
 	private class FooterOldStyle extends Footer {
-		public synchronized void paint(ZLPaintContext context) {
+		@Override
+        public synchronized void paint(ZLPaintContext context) {
 			final ZLFile wallpaper = getWallpaperFile();
 			if (wallpaper != null) {
 				context.clear(wallpaper, getFillMode());
@@ -632,7 +675,8 @@ public final class FBView extends ZLTextView {
 	}
 
 	private class FooterNewStyle extends Footer {
-		public synchronized void paint(ZLPaintContext context) {
+		@Override
+        public synchronized void paint(ZLPaintContext context) {
 			final ColorProfile cProfile = myViewOptions.getColorProfile();
 			context.clear(cProfile.FooterNGBackgroundOption.getValue());
 
@@ -782,6 +826,7 @@ public final class FBView extends ZLTextView {
 
 	@Override
 	public synchronized void onScrollingFinished(PageIndex pageIndex) {
+       LogUtil.log(TAG,"onScrollingFinished occured:"+pageIndex.toString()); 
 		super.onScrollingFinished(pageIndex);
 		myReader.storePosition();
 	}

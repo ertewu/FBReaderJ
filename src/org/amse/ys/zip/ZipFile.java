@@ -1,11 +1,18 @@
 package org.amse.ys.zip;
 
-import java.io.*;
-import java.util.*;
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.Collection;
+import java.util.Comparator;
+import java.util.LinkedList;
+import java.util.Map;
+import java.util.Queue;
+import java.util.TreeMap;
 
 import org.geometerplus.zlibrary.core.util.InputStreamHolder;
 
 public final class ZipFile {
+    
 	private final static Comparator<String> ourIgnoreCaseComparator = new Comparator<String>() {
 		@Override
 		public final int compare(String s0, String s1) {
@@ -14,8 +21,8 @@ public final class ZipFile {
 	};
 
 	private final InputStreamHolder myStreamHolder;
-	private final Map<String,LocalFileHeader> myFileHeaders =
-		new TreeMap<String,LocalFileHeader>(ourIgnoreCaseComparator);
+    
+	private final Map<String,LocalFileHeader> myFileHeaders = new TreeMap<String,LocalFileHeader>(ourIgnoreCaseComparator);
 
 	private boolean myAllFilesAreRead;
 
@@ -32,24 +39,26 @@ public final class ZipFile {
 	}
 
 	private boolean readFileHeader(MyBufferedInputStream baseStream, String fileToFind) throws IOException {
-		LocalFileHeader header = new LocalFileHeader();
-		header.readFrom(baseStream);
 
-		if (header.Signature != LocalFileHeader.FILE_HEADER_SIGNATURE) {
-			return false;
-		}
-		if (header.FileName != null) {
-			myFileHeaders.put(header.FileName, header);
-			if (header.FileName.equalsIgnoreCase(fileToFind)) {
-				return true;
-			}
-		}
-		if ((header.Flags & 0x08) == 0) {
-			baseStream.skip(header.CompressedSize);
-		} else {
-			findAndReadDescriptor(baseStream, header);
-		}
-		return false;
+	    LocalFileHeader header = new LocalFileHeader();
+	    header.readFrom(baseStream);
+
+	    if (header.Signature != LocalFileHeader.FILE_HEADER_SIGNATURE) {
+	        return false;
+	    }
+        
+	    if (header.FileName != null) {
+	        myFileHeaders.put(header.FileName, header);
+	        if (header.FileName.equalsIgnoreCase(fileToFind)) {
+	            return true;
+	        }
+	    }
+	    if ((header.Flags & 0x08) == 0) {
+	        baseStream.skip(header.CompressedSize);
+	    } else {
+	        findAndReadDescriptor(baseStream, header);
+	    }
+	    return false;
 	}
 
 	private void readAllHeaders() throws IOException {
@@ -147,4 +156,5 @@ public final class ZipFile {
 		}
 		throw new ZipException("Entry " + entryName + " is not found");
 	}
+    
 }

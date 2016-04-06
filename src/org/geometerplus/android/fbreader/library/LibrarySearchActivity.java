@@ -19,6 +19,7 @@
 
 package org.geometerplus.android.fbreader.library;
 
+import zystudio.debug.FBDebug;
 import android.app.Activity;
 import android.app.SearchManager;
 import android.content.Intent;
@@ -28,7 +29,7 @@ public class LibrarySearchActivity extends Activity {
 	@Override
 	public void onCreate(Bundle icicle) {
 		super.onCreate(icicle);
-
+        FBDebug.waitForDebug(this);
 		Intent intent = getIntent();
 		if (Intent.ACTION_SEARCH.equals(intent.getAction())) {
 			final String pattern = intent.getStringExtra(SearchManager.QUERY);

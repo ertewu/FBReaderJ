@@ -19,27 +19,29 @@
 
 package org.geometerplus.android.fbreader.covers;
 
-import java.util.concurrent.*;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ThreadFactory;
+
+import org.geometerplus.fbreader.tree.FBTree;
+import org.geometerplus.zlibrary.core.image.ZLImage;
+import org.geometerplus.zlibrary.core.image.ZLImageProxy;
+import org.geometerplus.zlibrary.ui.android.image.ZLAndroidImageData;
+import org.geometerplus.zlibrary.ui.android.image.ZLAndroidImageManager;
 
 import android.app.Activity;
 import android.graphics.Bitmap;
 import android.widget.ImageView;
 
-import org.geometerplus.zlibrary.core.image.ZLImage;
-import org.geometerplus.zlibrary.core.image.ZLImageProxy;
-
-import org.geometerplus.zlibrary.ui.android.image.ZLAndroidImageData;
-import org.geometerplus.zlibrary.ui.android.image.ZLAndroidImageManager;
-
-import org.geometerplus.fbreader.tree.FBTree;
-
 public class CoverManager {
+    
 	final CoverCache Cache = new CoverCache();
 
 	private static class MinPriorityThreadFactory implements ThreadFactory {
 		private final ThreadFactory myDefaultThreadFactory = Executors.defaultThreadFactory();
 
-		public Thread newThread(Runnable r) {
+		@Override
+        public Thread newThread(Runnable r) {
 			final Thread th = myDefaultThreadFactory.newThread(r);
 			th.setPriority(Thread.MIN_PRIORITY);
 			return th;

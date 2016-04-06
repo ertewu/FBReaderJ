@@ -20,6 +20,7 @@
 package org.geometerplus.zlibrary.text.view;
 
 interface PaintStateEnum {
+    
 	int NOTHING_TO_PAINT = 0;
 	int READY = 1;
 	int START_IS_KNOWN = 2;

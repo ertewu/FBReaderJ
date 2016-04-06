@@ -19,126 +19,128 @@
 
 package org.geometerplus.fbreader.network.tree;
 
+import org.geometerplus.fbreader.network.NetworkItem;
+import org.geometerplus.fbreader.network.NetworkLibrary;
 import org.geometerplus.zlibrary.core.network.ZLNetworkContext;
 import org.geometerplus.zlibrary.core.network.ZLNetworkException;
 
-import org.geometerplus.fbreader.network.NetworkLibrary;
-import org.geometerplus.fbreader.network.NetworkItem;
-
 public abstract class NetworkItemsLoader implements Runnable {
-	private final NetworkCatalogTree myTree;
+    
+    private final NetworkCatalogTree myTree;
 
-	private volatile Runnable myPostRunnable;
-	private volatile boolean myFinishedFlag;
-	public final ZLNetworkContext NetworkContext;
+    private volatile Runnable myPostRunnable;
+    private volatile boolean myFinishedFlag;
+    public final ZLNetworkContext NetworkContext;
 
-	protected NetworkItemsLoader(ZLNetworkContext nc, NetworkCatalogTree tree) {
-		NetworkContext = nc;
-		myTree = tree;
-	}
+    protected NetworkItemsLoader(ZLNetworkContext nc, NetworkCatalogTree tree) {
+        NetworkContext = nc;
+        myTree = tree;
+    }
 
-	public final void start() {
-		final Thread loaderThread = new Thread(this);
-		loaderThread.setPriority(Thread.MIN_PRIORITY);
-		loaderThread.start();
-	}
+    public final void start() {
+        final Thread loaderThread = new Thread(this);
+        loaderThread.setPriority(Thread.MIN_PRIORITY);
+        loaderThread.start();
+    }
 
-	public NetworkCatalogTree getTree() {
-		return myTree;
-	}
+    public NetworkCatalogTree getTree() {
+        return myTree;
+    }
 
-	public final void run() {
-		final NetworkLibrary library = NetworkLibrary.Instance();
+    @Override
+    public final void run() {
+        final NetworkLibrary library = NetworkLibrary.Instance();
+        synchronized (library) {
+            final NetworkCatalogTree tree = getTree();
+            if (library.isLoadingInProgress(tree)) {
+                return;
+            }
+            library.storeLoader(tree, this);
+        }
 
-		synchronized (library) {
-			final NetworkCatalogTree tree = getTree();
-			if (library.isLoadingInProgress(tree)) {
-				return;
-			}
-			library.storeLoader(tree, this);
-		}
+        try {
+            library.fireModelChangedEvent(NetworkLibrary.ChangeListener.Code.SomeCode);
 
-		try {
-			library.fireModelChangedEvent(NetworkLibrary.ChangeListener.Code.SomeCode);
+            try {
+                doBefore();
+            } catch (ZLNetworkException e) {
+                onFinish(e, false);
+                return;
+            }
 
-			try {
-				doBefore();
-			} catch (ZLNetworkException e) {
-				onFinish(e, false);
-				return;
-			}
+            try {
+                load();
+                onFinish(null, isLoadingInterrupted());
+            } catch (ZLNetworkException e) {
+                onFinish(e, isLoadingInterrupted());
+            }
+        } finally {
+            library.removeStoredLoader(getTree());
+            library.fireModelChangedEvent(NetworkLibrary.ChangeListener.Code.SomeCode);
+            synchronized (this) {
+                if (myPostRunnable != null) {
+                    myPostRunnable.run();
+                    myFinishedFlag = true;
+                }
+            }
+        }
+    }
 
-			try {
-				load();
-				onFinish(null, isLoadingInterrupted());
-			} catch (ZLNetworkException e) {
-				onFinish(e, isLoadingInterrupted());
-			}
-		} finally {
-			library.removeStoredLoader(getTree());
-			library.fireModelChangedEvent(NetworkLibrary.ChangeListener.Code.SomeCode);
-			synchronized (this) {
-				if (myPostRunnable != null) {
-					myPostRunnable.run();
-					myFinishedFlag = true;
-				}
-			}
-		}
-	}
+    private final Object myInterruptLock = new Object();
 
-	private final Object myInterruptLock = new Object();
-	private enum InterruptionState {
-		NONE,
-		REQUESTED,
-		CONFIRMED
-	};
-	private InterruptionState myInterruptionState = InterruptionState.NONE;
+    private enum InterruptionState {
+        NONE, REQUESTED, CONFIRMED
+    };
 
-	public final boolean canResumeLoading() {
-		synchronized (myInterruptLock) {
-			if (myInterruptionState == InterruptionState.REQUESTED) {
-				myInterruptionState = InterruptionState.NONE;
-			}
-			return myInterruptionState == InterruptionState.NONE;
-		}
-	}
+    private InterruptionState myInterruptionState = InterruptionState.NONE;
 
-	protected final boolean isLoadingInterrupted() {
-		synchronized (myInterruptLock) {
-			return myInterruptionState == InterruptionState.CONFIRMED;
-		}
-	}
+    public final boolean canResumeLoading() {
+        synchronized (myInterruptLock) {
+            if (myInterruptionState == InterruptionState.REQUESTED) {
+                myInterruptionState = InterruptionState.NONE;
+            }
+            return myInterruptionState == InterruptionState.NONE;
+        }
+    }
 
-	public void interrupt() {
-		synchronized (myInterruptLock) {
-			if (myInterruptionState == InterruptionState.NONE) {
-				myInterruptionState = InterruptionState.REQUESTED;
-			}
-		}
-	}
+    protected final boolean isLoadingInterrupted() {
+        synchronized (myInterruptLock) {
+            return myInterruptionState == InterruptionState.CONFIRMED;
+        }
+    }
 
-	public final boolean confirmInterruption() {
-		synchronized (myInterruptLock) {
-			if (myInterruptionState == InterruptionState.REQUESTED) {
-				myInterruptionState = InterruptionState.CONFIRMED;
-			}
-			return myInterruptionState == InterruptionState.CONFIRMED;
-		}
-	}
+    public void interrupt() {
+        synchronized (myInterruptLock) {
+            if (myInterruptionState == InterruptionState.NONE) {
+                myInterruptionState = InterruptionState.REQUESTED;
+            }
+        }
+    }
 
-	public void onNewItem(final NetworkItem item) {
-		getTree().addItem(item);
-	}
+    public final boolean confirmInterruption() {
+        synchronized (myInterruptLock) {
+            if (myInterruptionState == InterruptionState.REQUESTED) {
+                myInterruptionState = InterruptionState.CONFIRMED;
+            }
+            return myInterruptionState == InterruptionState.CONFIRMED;
+        }
+    }
 
-	public synchronized void setPostRunnable(Runnable action) {
-		if (myFinishedFlag) {
-			action.run();
-		} else {
-			myPostRunnable = action;
-		}
-	}
+    public void onNewItem(final NetworkItem item) {
+        getTree().addItem(item);
+    }
 
-	protected abstract void onFinish(ZLNetworkException exception, boolean interrupted);
-	protected abstract void doBefore() throws ZLNetworkException;
-	protected abstract void load() throws ZLNetworkException;
+    public synchronized void setPostRunnable(Runnable action) {
+        if (myFinishedFlag) {
+            action.run();
+        } else {
+            myPostRunnable = action;
+        }
+    }
+
+    protected abstract void onFinish(ZLNetworkException exception, boolean interrupted);
+
+    protected abstract void doBefore() throws ZLNetworkException;
+
+    protected abstract void load() throws ZLNetworkException;
 }

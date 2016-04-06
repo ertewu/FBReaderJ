@@ -22,84 +22,86 @@ package org.geometerplus.fbreader.bookmodel;
 import java.util.Arrays;
 import java.util.List;
 
-import org.geometerplus.zlibrary.core.fonts.*;
-import org.geometerplus.zlibrary.text.model.*;
-
 import org.geometerplus.fbreader.book.Book;
 import org.geometerplus.fbreader.formats.BuiltinFormatPlugin;
 import org.geometerplus.fbreader.formats.FormatPlugin;
+import org.geometerplus.zlibrary.core.fonts.FileInfo;
+import org.geometerplus.zlibrary.core.fonts.FontEntry;
+import org.geometerplus.zlibrary.core.fonts.FontManager;
+import org.geometerplus.zlibrary.text.model.ZLTextModel;
 
 public abstract class BookModel {
-	public static BookModel createModel(Book book) throws BookReadingException {
-		final FormatPlugin plugin = book.getPlugin();
+    
+    public static BookModel createModel(Book book) throws BookReadingException {
+        final FormatPlugin plugin = book.getPlugin();
 
-		System.err.println("using plugin: " + plugin.supportedFileType() + "/" + plugin.type());
+        System.err.println("using plugin: " + plugin.supportedFileType() + "/" + plugin.type());
 
-		if (plugin instanceof BuiltinFormatPlugin) {
-			final BookModel model = new NativeBookModel(book);
-			((BuiltinFormatPlugin)plugin).readModel(model);
-			return model;
-		}
+        if (plugin instanceof BuiltinFormatPlugin) {
+            final BookModel model = new NativeBookModel(book);
+            ((BuiltinFormatPlugin) plugin).readModel(model);
+            return model;
+        }
 
-		throw new BookReadingException(
-			"unknownPluginType", null, new String[] { plugin.type().toString() }
-		);
-	}
+        throw new BookReadingException("unknownPluginType", null, new String[] { plugin.type().toString() });
+    }
 
-	public final Book Book;
-	public final TOCTree TOCTree = new TOCTree();
-	public final FontManager FontManager = new FontManager();
+    public final Book Book;
+    public final TOCTree TOCTree = new TOCTree();
+    public final FontManager FontManager = new FontManager();
 
-	public static final class Label {
-		public final String ModelId;
-		public final int ParagraphIndex;
+    public static final class Label {
+        public final String ModelId;
+        public final int ParagraphIndex;
 
-		public Label(String modelId, int paragraphIndex) {
-			ModelId = modelId;
-			ParagraphIndex = paragraphIndex;
-		}
-	}
+        public Label(String modelId, int paragraphIndex) {
+            ModelId = modelId;
+            ParagraphIndex = paragraphIndex;
+        }
+    }
 
-	protected BookModel(Book book) {
-		Book = book;
-	}
+    protected BookModel(Book book) {
+        Book = book;
+    }
 
-	public abstract ZLTextModel getTextModel();
-	public abstract ZLTextModel getFootnoteModel(String id);
-	protected abstract Label getLabelInternal(String id);
+    public abstract ZLTextModel getTextModel();
 
-	public interface LabelResolver {
-		List<String> getCandidates(String id);
-	}
+    public abstract ZLTextModel getFootnoteModel(String id);
 
-	private LabelResolver myResolver;
+    protected abstract Label getLabelInternal(String id);
 
-	public void setLabelResolver(LabelResolver resolver) {
-		myResolver = resolver;
-	}
+    public interface LabelResolver {
+        List<String> getCandidates(String id);
+    }
 
-	public Label getLabel(String id) {
-		Label label = getLabelInternal(id);
-		if (label == null && myResolver != null) {
-			for (String candidate : myResolver.getCandidates(id)) {
-				label = getLabelInternal(candidate);
-				if (label != null) {
-					break;
-				}
-			}
-		}
-		return label;
-	}
+    private LabelResolver myResolver;
 
-	public void registerFontFamilyList(String[] families) {
-		FontManager.index(Arrays.asList(families));
-	}
+    public void setLabelResolver(LabelResolver resolver) {
+        myResolver = resolver;
+    }
 
-	public void registerFontEntry(String family, FontEntry entry) {
-		FontManager.Entries.put(family, entry);
-	}
+    public Label getLabel(String id) {
+        Label label = getLabelInternal(id);
+        if (label == null && myResolver != null) {
+            for (String candidate : myResolver.getCandidates(id)) {
+                label = getLabelInternal(candidate);
+                if (label != null) {
+                    break;
+                }
+            }
+        }
+        return label;
+    }
 
-	public void registerFontEntry(String family, FileInfo normal, FileInfo bold, FileInfo italic, FileInfo boldItalic) {
-		registerFontEntry(family, new FontEntry(family, normal, bold, italic, boldItalic));
-	}
+    public void registerFontFamilyList(String[] families) {
+        FontManager.index(Arrays.asList(families));
+    }
+
+    public void registerFontEntry(String family, FontEntry entry) {
+        FontManager.Entries.put(family, entry);
+    }
+
+    public void registerFontEntry(String family, FileInfo normal, FileInfo bold, FileInfo italic, FileInfo boldItalic) {
+        registerFontEntry(family, new FontEntry(family, normal, bold, italic, boldItalic));
+    }
 }

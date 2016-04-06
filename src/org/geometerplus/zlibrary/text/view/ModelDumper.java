@@ -23,6 +23,7 @@ import org.geometerplus.zlibrary.text.model.ZLTextModel;
 import org.geometerplus.zlibrary.text.model.ZLTextParagraph;
 
 abstract class ModelDumper {
+    
 	static void dump(ZLTextModel model) {
 		System.err.println("+++ MODEL DUMP +++");
 		if (model == null) {

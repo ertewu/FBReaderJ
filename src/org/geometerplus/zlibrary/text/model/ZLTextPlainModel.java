@@ -19,441 +19,457 @@
 
 package org.geometerplus.zlibrary.text.model;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 import org.geometerplus.zlibrary.core.fonts.FontManager;
 import org.geometerplus.zlibrary.core.image.ZLImage;
-import org.geometerplus.zlibrary.core.util.*;
+import org.geometerplus.zlibrary.core.util.ZLSearchPattern;
+import org.geometerplus.zlibrary.core.util.ZLSearchUtil;
 
 public class ZLTextPlainModel implements ZLTextModel, ZLTextStyleEntry.Feature {
-	private final String myId;
-	private final String myLanguage;
 
-	protected int[] myStartEntryIndices;
-	protected int[] myStartEntryOffsets;
-	protected int[] myParagraphLengths;
-	protected int[] myTextSizes;
-	protected byte[] myParagraphKinds;
+    private final String myId;
+    private final String myLanguage;
+    
+    protected int[] myStartEntryIndices;
+    protected int[] myStartEntryOffsets;
+    protected int[] myParagraphLengths;
+    protected int[] myTextSizes;
+    protected byte[] myParagraphKinds;
 
-	protected int myParagraphsNumber;
+    protected int myParagraphsNumber;
 
-	protected final CharStorage myStorage;
-	protected final Map<String,ZLImage> myImageMap;
+    protected final CharStorage myStorage;
+    protected final Map<String, ZLImage> myImageMap;
 
-	private ArrayList<ZLTextMark> myMarks;
+    private ArrayList<ZLTextMark> myMarks;
 
-	private final FontManager myFontManager;
+    private final FontManager myFontManager;
 
-	final class EntryIteratorImpl implements ZLTextParagraph.EntryIterator {
-		private int myCounter;
-		private int myLength;
-		private byte myType;
+    final class EntryIteratorImpl implements ZLTextParagraph.EntryIterator {
+        private int myCounter;
+        private int myLength;
+        private byte myType;
 
-		int myDataIndex;
-		int myDataOffset;
+        int myDataIndex;
+        int myDataOffset;
 
-		// TextEntry data
-		private char[] myTextData;
-		private int myTextOffset;
-		private int myTextLength;
+        // TextEntry data
+        private char[] myTextData;
+        private int myTextOffset;
+        private int myTextLength;
 
-		// ControlEntry data
-		private byte myControlKind;
-		private boolean myControlIsStart;
-		// HyperlinkControlEntry data
-		private byte myHyperlinkType;
-		private String myHyperlinkId;
+        // ControlEntry data
+        private byte myControlKind;
+        private boolean myControlIsStart;
+        // HyperlinkControlEntry data
+        private byte myHyperlinkType;
+        private String myHyperlinkId;
 
-		// ImageEntry
-		private ZLImageEntry myImageEntry;
+        // ImageEntry
+        private ZLImageEntry myImageEntry;
 
-		// VideoEntry
-		private ZLVideoEntry myVideoEntry;
+        // VideoEntry
+        private ZLVideoEntry myVideoEntry;
 
-		// ExtensionEntry
-		private ExtensionEntry myExtensionEntry;
+        // ExtensionEntry
+        private ExtensionEntry myExtensionEntry;
 
-		// StyleEntry
-		private ZLTextStyleEntry myStyleEntry;
+        // StyleEntry
+        private ZLTextStyleEntry myStyleEntry;
 
-		// FixedHSpaceEntry data
-		private short myFixedHSpaceLength;
+        // FixedHSpaceEntry data
+        private short myFixedHSpaceLength;
 
-		EntryIteratorImpl(int index) {
-			reset(index);
-		}
+        EntryIteratorImpl(int index) {
+            reset(index);
+        }
 
-		void reset(int index) {
-			myCounter = 0;
-			myLength = myParagraphLengths[index];
-			myDataIndex = myStartEntryIndices[index];
-			myDataOffset = myStartEntryOffsets[index];
-		}
+        void reset(int index) {
+            myCounter = 0;
+            myLength = myParagraphLengths[index];
+            myDataIndex = myStartEntryIndices[index];
+            myDataOffset = myStartEntryOffsets[index];
+        }
 
-		public byte getType() {
-			return myType;
-		}
+        @Override
+        public byte getType() {
+            return myType;
+        }
 
-		public char[] getTextData() {
-			return myTextData;
-		}
-		public int getTextOffset() {
-			return myTextOffset;
-		}
-		public int getTextLength() {
-			return myTextLength;
-		}
+        @Override
+        public char[] getTextData() {
+            return myTextData;
+        }
 
-		public byte getControlKind() {
-			return myControlKind;
-		}
-		public boolean getControlIsStart() {
-			return myControlIsStart;
-		}
-		public byte getHyperlinkType() {
-			return myHyperlinkType;
-		}
-		public String getHyperlinkId() {
-			return myHyperlinkId;
-		}
+        @Override
+        public int getTextOffset() {
+            return myTextOffset;
+        }
 
-		public ZLImageEntry getImageEntry() {
-			return myImageEntry;
-		}
+        @Override
+        public int getTextLength() {
+            return myTextLength;
+        }
 
-		public ZLVideoEntry getVideoEntry() {
-			return myVideoEntry;
-		}
+        @Override
+        public byte getControlKind() {
+            return myControlKind;
+        }
 
-		public ExtensionEntry getExtensionEntry() {
-			return myExtensionEntry;
-		}
+        @Override
+        public boolean getControlIsStart() {
+            return myControlIsStart;
+        }
 
-		public ZLTextStyleEntry getStyleEntry() {
-			return myStyleEntry;
-		}
+        @Override
+        public byte getHyperlinkType() {
+            return myHyperlinkType;
+        }
 
-		public short getFixedHSpaceLength() {
-			return myFixedHSpaceLength;
-		}
+        @Override
+        public String getHyperlinkId() {
+            return myHyperlinkId;
+        }
 
-		public boolean next() {
-			if (myCounter >= myLength) {
-				return false;
-			}
+        @Override
+        public ZLImageEntry getImageEntry() {
+            return myImageEntry;
+        }
 
-			int dataOffset = myDataOffset;
-			char[] data = myStorage.block(myDataIndex);
-			if (data == null) {
-				return false;
-			}
-			if (dataOffset >= data.length) {
-				data = myStorage.block(++myDataIndex);
-				if (data == null) {
-					return false;
-				}
-				dataOffset = 0;
-			}
-			short first = (short)data[dataOffset];
-			byte type = (byte)first;
-			if (type == 0) {
-				data = myStorage.block(++myDataIndex);
-				if (data == null) {
-					return false;
-				}
-				dataOffset = 0;
-				first = (short)data[0];
-				type = (byte)first;
-			}
-			myType = type;
-			++dataOffset;
-			switch (type) {
-				case ZLTextParagraph.Entry.TEXT:
-				{
-					int textLength = (int)data[dataOffset++];
-					textLength += (((int)data[dataOffset++]) << 16);
-					textLength = Math.min(textLength, data.length - dataOffset);
-					myTextLength = textLength;
-					myTextData = data;
-					myTextOffset = dataOffset;
-					dataOffset += textLength;
-					break;
-				}
-				case ZLTextParagraph.Entry.CONTROL:
-				{
-					short kind = (short)data[dataOffset++];
-					myControlKind = (byte)kind;
-					myControlIsStart = (kind & 0x0100) == 0x0100;
-					myHyperlinkType = 0;
-					break;
-				}
-				case ZLTextParagraph.Entry.HYPERLINK_CONTROL:
-				{
-					final short kind = (short)data[dataOffset++];
-					myControlKind = (byte)kind;
-					myControlIsStart = true;
-					myHyperlinkType = (byte)(kind >> 8);
-					final short labelLength = (short)data[dataOffset++];
-					myHyperlinkId = new String(data, dataOffset, labelLength);
-					dataOffset += labelLength;
-					break;
-				}
-				case ZLTextParagraph.Entry.IMAGE:
-				{
-					final short vOffset = (short)data[dataOffset++];
-					final short len = (short)data[dataOffset++];
-					final String id = new String(data, dataOffset, len);
-					dataOffset += len;
-					final boolean isCover = data[dataOffset++] != 0;
-					myImageEntry = new ZLImageEntry(myImageMap, id, vOffset, isCover);
-					break;
-				}
-				case ZLTextParagraph.Entry.FIXED_HSPACE:
-					myFixedHSpaceLength = (short)data[dataOffset++];
-					break;
-				case ZLTextParagraph.Entry.STYLE_CSS:
-				case ZLTextParagraph.Entry.STYLE_OTHER:
-				{
-					final short depth = (short)((first >> 8) & 0xFF);
-					final ZLTextStyleEntry entry =
-						type == ZLTextParagraph.Entry.STYLE_CSS
-							? new ZLTextCSSStyleEntry(depth)
-							: new ZLTextOtherStyleEntry();
+        @Override
+        public ZLVideoEntry getVideoEntry() {
+            return myVideoEntry;
+        }
 
-					final short mask = (short)data[dataOffset++];
-					for (int i = 0; i < NUMBER_OF_LENGTHS; ++i) {
-						if (ZLTextStyleEntry.isFeatureSupported(mask, i)) {
-							final short size = (short)data[dataOffset++];
-							final byte unit = (byte)data[dataOffset++];
-							entry.setLength(i, size, unit);
-						}
-					}
-					if (ZLTextStyleEntry.isFeatureSupported(mask, ALIGNMENT_TYPE) ||
-						ZLTextStyleEntry.isFeatureSupported(mask, NON_LENGTH_VERTICAL_ALIGN)) {
-						final short value = (short)data[dataOffset++];
-						if (ZLTextStyleEntry.isFeatureSupported(mask, ALIGNMENT_TYPE)) {
-							entry.setAlignmentType((byte)(value & 0xFF));
-						}
-						if (ZLTextStyleEntry.isFeatureSupported(mask, NON_LENGTH_VERTICAL_ALIGN)) {
-							entry.setVerticalAlignCode((byte)((value >> 8) & 0xFF));
-						}
-					}
-					if (ZLTextStyleEntry.isFeatureSupported(mask, FONT_FAMILY)) {
-						entry.setFontFamilies(myFontManager, (short)data[dataOffset++]);
-					}
-					if (ZLTextStyleEntry.isFeatureSupported(mask, FONT_STYLE_MODIFIER)) {
-						final short value = (short)data[dataOffset++];
-						entry.setFontModifiers((byte)(value & 0xFF), (byte)((value >> 8) & 0xFF));
-					}
+        @Override
+        public ExtensionEntry getExtensionEntry() {
+            return myExtensionEntry;
+        }
 
-					myStyleEntry = entry;
-				}
-				case ZLTextParagraph.Entry.STYLE_CLOSE:
-					// No data
-					break;
-				case ZLTextParagraph.Entry.RESET_BIDI:
-					// No data
-					break;
-				case ZLTextParagraph.Entry.AUDIO:
-					// No data
-					break;
-				case ZLTextParagraph.Entry.VIDEO:
-				{
-					myVideoEntry = new ZLVideoEntry();
-					final short mapSize = (short)data[dataOffset++];
-					for (short i = 0; i < mapSize; ++i) {
-						short len = (short)data[dataOffset++];
-						final String mime = new String(data, dataOffset, len);
-						dataOffset += len;
-						len = (short)data[dataOffset++];
-						final String src = new String(data, dataOffset, len);
-						dataOffset += len;
-						myVideoEntry.addSource(mime, src);
-					}
-					break;
-				}
-				case ZLTextParagraph.Entry.EXTENSION:
-				{
-					final short kindLength = (short)data[dataOffset++];
-					final String kind = new String(data, dataOffset, kindLength);
-					dataOffset += kindLength;
+        @Override
+        public ZLTextStyleEntry getStyleEntry() {
+            return myStyleEntry;
+        }
 
-					final Map<String,String> map = new HashMap<String,String>();
-					final short dataSize = (short)((first >> 8) & 0xFF);
-					for (short i = 0; i < dataSize; ++i) {
-						final short keyLength = (short)data[dataOffset++];
-						final String key = new String(data, dataOffset, keyLength);
-						dataOffset += keyLength;
-						final short valueLength = (short)data[dataOffset++];
-						map.put(key, new String(data, dataOffset, valueLength));
-						dataOffset += valueLength;
-					}
-					myExtensionEntry = new ExtensionEntry(kind, map);
-					break;
-				}
-			}
-			++myCounter;
-			myDataOffset = dataOffset;
-			return true;
-		}
-	}
+        @Override
+        public short getFixedHSpaceLength() {
+            return myFixedHSpaceLength;
+        }
 
-	protected ZLTextPlainModel(
-		String id,
-		String language,
-		int[] entryIndices,
-		int[] entryOffsets,
-		int[] paragraphLenghts,
-		int[] textSizes,
-		byte[] paragraphKinds,
-		CharStorage storage,
-		Map<String,ZLImage> imageMap,
-		FontManager fontManager
-	) {
-		myId = id;
-		myLanguage = language;
-		myStartEntryIndices = entryIndices;
-		myStartEntryOffsets = entryOffsets;
-		myParagraphLengths = paragraphLenghts;
-		myTextSizes = textSizes;
-		myParagraphKinds = paragraphKinds;
-		myStorage = storage;
-		myImageMap = imageMap;
-		myFontManager = fontManager;
-	}
+        @Override
+        public boolean next() {
+            if (myCounter >= myLength) {
+                return false;
+            }
 
-	public final String getId() {
-		return myId;
-	}
+            int dataOffset = myDataOffset;
+            char[] data = myStorage.block(myDataIndex);
+            if (data == null) {
+                return false;
+            }
+            if (dataOffset >= data.length) {
+                data = myStorage.block(++myDataIndex);
+                if (data == null) {
+                    return false;
+                }
+                dataOffset = 0;
+            }
+            short first = (short) data[dataOffset];
+            byte type = (byte) first;
+            if (type == 0) {
+                data = myStorage.block(++myDataIndex);
+                if (data == null) {
+                    return false;
+                }
+                dataOffset = 0;
+                first = (short) data[0];
+                type = (byte) first;
+            }
+            myType = type;
+            ++dataOffset;
+            switch (type) {
+            case ZLTextParagraph.Entry.TEXT: {
+                int textLength = data[dataOffset++];
+                textLength += ((data[dataOffset++]) << 16);
+                textLength = Math.min(textLength, data.length - dataOffset);
+                myTextLength = textLength;
+                myTextData = data;
+                myTextOffset = dataOffset;
+                dataOffset += textLength;
+                break;
+            }
+            case ZLTextParagraph.Entry.CONTROL: {
+                short kind = (short) data[dataOffset++];
+                myControlKind = (byte) kind;
+                myControlIsStart = (kind & 0x0100) == 0x0100;
+                myHyperlinkType = 0;
+                break;
+            }
+            case ZLTextParagraph.Entry.HYPERLINK_CONTROL: {
+                final short kind = (short) data[dataOffset++];
+                myControlKind = (byte) kind;
+                myControlIsStart = true;
+                myHyperlinkType = (byte) (kind >> 8);
+                final short labelLength = (short) data[dataOffset++];
+                myHyperlinkId = new String(data, dataOffset, labelLength);
+                dataOffset += labelLength;
+                break;
+            }
+            case ZLTextParagraph.Entry.IMAGE: {
+                final short vOffset = (short) data[dataOffset++];
+                final short len = (short) data[dataOffset++];
+                final String id = new String(data, dataOffset, len);
+                dataOffset += len;
+                final boolean isCover = data[dataOffset++] != 0;
+                myImageEntry = new ZLImageEntry(myImageMap, id, vOffset, isCover);
+                break;
+            }
+            case ZLTextParagraph.Entry.FIXED_HSPACE:
+                myFixedHSpaceLength = (short) data[dataOffset++];
+                break;
+            case ZLTextParagraph.Entry.STYLE_CSS:
+            case ZLTextParagraph.Entry.STYLE_OTHER: {
+                final short depth = (short) ((first >> 8) & 0xFF);
+                final ZLTextStyleEntry entry = type == ZLTextParagraph.Entry.STYLE_CSS ? new ZLTextCSSStyleEntry(depth) : new ZLTextOtherStyleEntry();
 
-	public final String getLanguage() {
-		return myLanguage;
-	}
+                final short mask = (short) data[dataOffset++];
+                for (int i = 0; i < NUMBER_OF_LENGTHS; ++i) {
+                    if (ZLTextStyleEntry.isFeatureSupported(mask, i)) {
+                        final short size = (short) data[dataOffset++];
+                        final byte unit = (byte) data[dataOffset++];
+                        entry.setLength(i, size, unit);
+                    }
+                }
+                if (ZLTextStyleEntry.isFeatureSupported(mask, ALIGNMENT_TYPE) || ZLTextStyleEntry.isFeatureSupported(mask, NON_LENGTH_VERTICAL_ALIGN)) {
+                    final short value = (short) data[dataOffset++];
+                    if (ZLTextStyleEntry.isFeatureSupported(mask, ALIGNMENT_TYPE)) {
+                        entry.setAlignmentType((byte) (value & 0xFF));
+                    }
+                    if (ZLTextStyleEntry.isFeatureSupported(mask, NON_LENGTH_VERTICAL_ALIGN)) {
+                        entry.setVerticalAlignCode((byte) ((value >> 8) & 0xFF));
+                    }
+                }
+                if (ZLTextStyleEntry.isFeatureSupported(mask, FONT_FAMILY)) {
+                    entry.setFontFamilies(myFontManager, (short) data[dataOffset++]);
+                }
+                if (ZLTextStyleEntry.isFeatureSupported(mask, FONT_STYLE_MODIFIER)) {
+                    final short value = (short) data[dataOffset++];
+                    entry.setFontModifiers((byte) (value & 0xFF), (byte) ((value >> 8) & 0xFF));
+                }
 
-	public final ZLTextMark getFirstMark() {
-		return (myMarks == null || myMarks.isEmpty()) ? null : myMarks.get(0);
-	}
+                myStyleEntry = entry;
+            }
+            case ZLTextParagraph.Entry.STYLE_CLOSE:
+                // No data
+                break;
+            case ZLTextParagraph.Entry.RESET_BIDI:
+                // No data
+                break;
+            case ZLTextParagraph.Entry.AUDIO:
+                // No data
+                break;
+            case ZLTextParagraph.Entry.VIDEO: {
+                myVideoEntry = new ZLVideoEntry();
+                final short mapSize = (short) data[dataOffset++];
+                for (short i = 0; i < mapSize; ++i) {
+                    short len = (short) data[dataOffset++];
+                    final String mime = new String(data, dataOffset, len);
+                    dataOffset += len;
+                    len = (short) data[dataOffset++];
+                    final String src = new String(data, dataOffset, len);
+                    dataOffset += len;
+                    myVideoEntry.addSource(mime, src);
+                }
+                break;
+            }
+            case ZLTextParagraph.Entry.EXTENSION: {
+                final short kindLength = (short) data[dataOffset++];
+                final String kind = new String(data, dataOffset, kindLength);
+                dataOffset += kindLength;
 
-	public final ZLTextMark getLastMark() {
-		return (myMarks == null || myMarks.isEmpty()) ? null : myMarks.get(myMarks.size() - 1);
-	}
+                final Map<String, String> map = new HashMap<String, String>();
+                final short dataSize = (short) ((first >> 8) & 0xFF);
+                for (short i = 0; i < dataSize; ++i) {
+                    final short keyLength = (short) data[dataOffset++];
+                    final String key = new String(data, dataOffset, keyLength);
+                    dataOffset += keyLength;
+                    final short valueLength = (short) data[dataOffset++];
+                    map.put(key, new String(data, dataOffset, valueLength));
+                    dataOffset += valueLength;
+                }
+                myExtensionEntry = new ExtensionEntry(kind, map);
+                break;
+            }
+            }
+            ++myCounter;
+            myDataOffset = dataOffset;
+            return true;
+        }
+    }
 
-	public final ZLTextMark getNextMark(ZLTextMark position) {
-		if (position == null || myMarks == null) {
-			return null;
-		}
+    protected ZLTextPlainModel(String id, String language, int[] entryIndices, int[] entryOffsets, int[] paragraphLenghts, int[] textSizes,
+            byte[] paragraphKinds, CharStorage storage, Map<String, ZLImage> imageMap, FontManager fontManager) {
+        myId = id;
+        myLanguage = language;
+        myStartEntryIndices = entryIndices;
+        myStartEntryOffsets = entryOffsets;
+        myParagraphLengths = paragraphLenghts;
+        myTextSizes = textSizes;
+        myParagraphKinds = paragraphKinds;
+        myStorage = storage;
+        myImageMap = imageMap;
+        myFontManager = fontManager;
+    }
 
-		ZLTextMark mark = null;
-		for (ZLTextMark current : myMarks) {
-			if (current.compareTo(position) >= 0) {
-				if ((mark == null) || (mark.compareTo(current) > 0)) {
-					mark = current;
-				}
-			}
-		}
-		return mark;
-	}
+    @Override
+    public final String getId() {
+        return myId;
+    }
 
-	public final ZLTextMark getPreviousMark(ZLTextMark position) {
-		if ((position == null) || (myMarks == null)) {
-			return null;
-		}
+    @Override
+    public final String getLanguage() {
+        return myLanguage;
+    }
 
-		ZLTextMark mark = null;
-		for (ZLTextMark current : myMarks) {
-			if (current.compareTo(position) < 0) {
-				if ((mark == null) || (mark.compareTo(current) < 0)) {
-					mark = current;
-				}
-			}
-		}
-		return mark;
-	}
+    @Override
+    public final ZLTextMark getFirstMark() {
+        return (myMarks == null || myMarks.isEmpty()) ? null : myMarks.get(0);
+    }
 
-	public final int search(final String text, int startIndex, int endIndex, boolean ignoreCase) {
-		int count = 0;
-		ZLSearchPattern pattern = new ZLSearchPattern(text, ignoreCase);
-		myMarks = new ArrayList<ZLTextMark>();
-		if (startIndex > myParagraphsNumber) {
-			startIndex = myParagraphsNumber;
-		}
-		if (endIndex > myParagraphsNumber) {
-			endIndex = myParagraphsNumber;
-		}
-		int index = startIndex;
-		final EntryIteratorImpl it = new EntryIteratorImpl(index);
-		while (true) {
-			int offset = 0;
-			while (it.next()) {
-				if (it.getType() == ZLTextParagraph.Entry.TEXT) {
-					char[] textData = it.getTextData();
-					int textOffset = it.getTextOffset();
-					int textLength = it.getTextLength();
-					for (ZLSearchUtil.Result res = ZLSearchUtil.find(textData, textOffset, textLength, pattern); res != null;
-						res = ZLSearchUtil.find(textData, textOffset, textLength, pattern, res.Start + 1)) {
-						myMarks.add(new ZLTextMark(index, offset + res.Start, res.Length));
-						++count;
-					}
-					offset += textLength;
-				}
-			}
-			if (++index >= endIndex) {
-				break;
-			}
-			it.reset(index);
-		}
-		return count;
-	}
+    @Override
+    public final ZLTextMark getLastMark() {
+        return (myMarks == null || myMarks.isEmpty()) ? null : myMarks.get(myMarks.size() - 1);
+    }
 
-	public final List<ZLTextMark> getMarks() {
-		return myMarks != null ? myMarks : Collections.<ZLTextMark>emptyList();
-	}
+    @Override
+    public final ZLTextMark getNextMark(ZLTextMark position) {
+        if (position == null || myMarks == null) {
+            return null;
+        }
 
-	public final void removeAllMarks() {
-		myMarks = null;
-	}
+        ZLTextMark mark = null;
+        for (ZLTextMark current : myMarks) {
+            if (current.compareTo(position) >= 0) {
+                if ((mark == null) || (mark.compareTo(current) > 0)) {
+                    mark = current;
+                }
+            }
+        }
+        return mark;
+    }
 
-	public final int getParagraphsNumber() {
-		return myParagraphsNumber;
-	}
+    @Override
+    public final ZLTextMark getPreviousMark(ZLTextMark position) {
+        if ((position == null) || (myMarks == null)) {
+            return null;
+        }
 
-	public final ZLTextParagraph getParagraph(int index) {
-		final byte kind = myParagraphKinds[index];
-		return (kind == ZLTextParagraph.Kind.TEXT_PARAGRAPH) ?
-			new ZLTextParagraphImpl(this, index) :
-			new ZLTextSpecialParagraphImpl(kind, this, index);
-	}
+        ZLTextMark mark = null;
+        for (ZLTextMark current : myMarks) {
+            if (current.compareTo(position) < 0) {
+                if ((mark == null) || (mark.compareTo(current) < 0)) {
+                    mark = current;
+                }
+            }
+        }
+        return mark;
+    }
 
-	public final int getTextLength(int index) {
-		if (myTextSizes.length == 0) {
-			return 0;
-		}
-		return myTextSizes[Math.max(Math.min(index, myParagraphsNumber - 1), 0)];
-	}
+    @Override
+    public final int search(final String text, int startIndex, int endIndex, boolean ignoreCase) {
+        int count = 0;
+        ZLSearchPattern pattern = new ZLSearchPattern(text, ignoreCase);
+        myMarks = new ArrayList<ZLTextMark>();
+        if (startIndex > myParagraphsNumber) {
+            startIndex = myParagraphsNumber;
+        }
+        if (endIndex > myParagraphsNumber) {
+            endIndex = myParagraphsNumber;
+        }
+        int index = startIndex;
+        final EntryIteratorImpl it = new EntryIteratorImpl(index);
+        while (true) {
+            int offset = 0;
+            while (it.next()) {
+                if (it.getType() == ZLTextParagraph.Entry.TEXT) {
+                    char[] textData = it.getTextData();
+                    int textOffset = it.getTextOffset();
+                    int textLength = it.getTextLength();
+                    for (ZLSearchUtil.Result res = ZLSearchUtil.find(textData, textOffset, textLength, pattern); res != null; res = ZLSearchUtil
+                            .find(textData, textOffset, textLength, pattern, res.Start + 1)) {
+                        myMarks.add(new ZLTextMark(index, offset + res.Start, res.Length));
+                        ++count;
+                    }
+                    offset += textLength;
+                }
+            }
+            if (++index >= endIndex) {
+                break;
+            }
+            it.reset(index);
+        }
+        return count;
+    }
 
-	private static int binarySearch(int[] array, int length, int value) {
-		int lowIndex = 0;
-		int highIndex = length - 1;
+    @Override
+    public final List<ZLTextMark> getMarks() {
+        return myMarks != null ? myMarks : Collections.<ZLTextMark> emptyList();
+    }
 
-		while (lowIndex <= highIndex) {
-			int midIndex = (lowIndex + highIndex) >>> 1;
-			int midValue = array[midIndex];
-			if (midValue > value) {
-				highIndex = midIndex - 1;
-			} else if (midValue < value) {
-				lowIndex = midIndex + 1;
-			} else {
-				return midIndex;
-			}
-		}
-		return -lowIndex - 1;
-	}
+    @Override
+    public final void removeAllMarks() {
+        myMarks = null;
+    }
 
-	public final int findParagraphByTextLength(int length) {
-		int index = binarySearch(myTextSizes, myParagraphsNumber, length);
-		if (index >= 0) {
-			return index;
-		}
-		return Math.min(-index - 1, myParagraphsNumber - 1);
-	}
+    @Override
+    public final int getParagraphsNumber() {
+        return myParagraphsNumber;
+    }
+
+    @Override
+    public final ZLTextParagraph getParagraph(int index) {
+        final byte kind = myParagraphKinds[index];
+        return (kind == ZLTextParagraph.Kind.TEXT_PARAGRAPH) ? new ZLTextParagraphImpl(this, index) : new ZLTextSpecialParagraphImpl(kind, this,
+                index);
+    }
+
+    @Override
+    public final int getTextLength(int index) {
+        if (myTextSizes.length == 0) {
+            return 0;
+        }
+        return myTextSizes[Math.max(Math.min(index, myParagraphsNumber - 1), 0)];
+    }
+
+    private static int binarySearch(int[] array, int length, int value) {
+        int lowIndex = 0;
+        int highIndex = length - 1;
+
+        while (lowIndex <= highIndex) {
+            int midIndex = (lowIndex + highIndex) >>> 1;
+            int midValue = array[midIndex];
+            if (midValue > value) {
+                highIndex = midIndex - 1;
+            } else if (midValue < value) {
+                lowIndex = midIndex + 1;
+            } else {
+                return midIndex;
+            }
+        }
+        return -lowIndex - 1;
+    }
+
+    @Override
+    public final int findParagraphByTextLength(int length) {
+        int index = binarySearch(myTextSizes, myParagraphsNumber, length);
+        if (index >= 0) {
+            return index;
+        }
+        return Math.min(-index - 1, myParagraphsNumber - 1);
+    }
 }

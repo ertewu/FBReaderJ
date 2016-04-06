@@ -81,6 +81,7 @@ enum BreakAction
  * Break action pair table.  This is a direct mapping of Table 2 of
  * Unicode Standard Annex 14, Revision 24.
  */
+//每一行都对应了LineBreakClass的一个布尔，所以说顺序和数目是严格对应的？值得发现的是LBP_JT，这个数组下标竟然也是一个enum值，暗中就看成了int了是么？
 static enum BreakAction baTable[LBP_JT][LBP_JT] = {
 	{	/* OP */
 		PROHIBITED_BRK, PROHIBITED_BRK, PROHIBITED_BRK, PROHIBITED_BRK,
@@ -314,6 +315,7 @@ struct LineBreakPropertiesIndex
  */
 static struct LineBreakPropertiesIndex lb_prop_index[LINEBREAK_INDEX_SIZE] =
 {
+        //就这样，就声明了一个LineBreakPropertiesIndex的对象？或者说实体？挺随性啊...
 	{ 0xFFFFFFFF, lb_prop_default }
 };
 
@@ -323,6 +325,9 @@ static struct LineBreakPropertiesIndex lb_prop_index[LINEBREAK_INDEX_SIZE] =
  * thus the main functionality) can be pretty bad, especially for big
  * code points like those of Chinese.
  */
+/**
+ * 我看这个样子的
+ */
 void init_linebreak(void)
 {
 	size_t i;
@@ -331,7 +336,9 @@ void init_linebreak(void)
 	size_t step;
 
 	len = 0;
+    //lb_prop_default在linebreakdef.h中定义
 	while (lb_prop_default[len].prop != LBP_Undefined)
+		//这个while就是在初始化len ?
 		++len;
 	step = len / LINEBREAK_INDEX_SIZE;
 	iPropDefault = 0;
@@ -356,6 +363,7 @@ static struct LineBreakProperties *get_lb_prop_lang(const char *lang)
 	struct LineBreakPropertiesLang *lbplIter;
 	if (lang != NULL)
 	{
+        //lb_prop_lang_map在linebreakdef.h中定义,linebreakdef.c中初始化
 		for (lbplIter = lb_prop_lang_map; lbplIter->lang != NULL; ++lbplIter)
 		{
 			if (strncmp(lang, lbplIter->lang, lbplIter->namelen) == 0)
@@ -383,6 +391,7 @@ static enum LineBreakClass get_char_lb_class(
 	{
 		if (ch <= lbp->end)
 			return lbp->prop;
+        //lbp是一个指针，也即引用的是一个LineBreakProperties的数组
 		++lbp;
 	}
 	return LBP_XX;
@@ -399,6 +408,7 @@ static enum LineBreakClass get_char_lb_class_default(
 		utf32_t ch)
 {
 	size_t i = 0;
+    //lb_prop_index, 本文件第315行定义
 	while (ch > lb_prop_index[i].end)
 		++i;
 	assert(i < LINEBREAK_INDEX_SIZE);
@@ -585,6 +595,7 @@ utf32_t lb_get_next_char_utf32(
 		size_t len,
 		size_t *ip)
 {
+    //断言宏，如果条件不符合，程序会直接断掉，通常这东西是用来debug的，在实际投入使用的时候，要禁用掉这个函数
 	assert(*ip <= len);
 	if (*ip == len)
 		return EOS;

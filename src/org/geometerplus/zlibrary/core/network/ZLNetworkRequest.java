@@ -19,87 +19,89 @@
 
 package org.geometerplus.zlibrary.core.network;
 
-import java.io.*;
-import java.util.Map;
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
 import java.util.HashMap;
+import java.util.Map;
 
 public abstract class ZLNetworkRequest {
-	public static abstract class Get extends ZLNetworkRequest {
-		protected Get(String url) {
-			this(url, false);
-		}
+    public static abstract class Get extends ZLNetworkRequest {
+        protected Get(String url) {
+            this(url, false);
+        }
 
-		protected Get(String url, boolean quiet) {
-			super(url, quiet);
-		}
-	}
+        protected Get(String url, boolean quiet) {
+            super(url, quiet);
+        }
+    }
 
-	public static abstract class PostWithMap extends ZLNetworkRequest {
-		public final Map<String,String> PostParameters = new HashMap<String,String>();
+    public static abstract class PostWithMap extends ZLNetworkRequest {
+        public final Map<String, String> PostParameters = new HashMap<String, String>();
 
-		protected PostWithMap(String url) {
-			this(url, false);
-		}
+        protected PostWithMap(String url) {
+            this(url, false);
+        }
 
-		protected PostWithMap(String url, boolean quiet) {
-			super(url, quiet);
-		}
+        protected PostWithMap(String url, boolean quiet) {
+            super(url, quiet);
+        }
 
-		public void addPostParameter(String name, String value) {
-			PostParameters.put(name, value);
-		}
-	}
+        public void addPostParameter(String name, String value) {
+            PostParameters.put(name, value);
+        }
+    }
 
-	public static abstract class PostWithBody extends ZLNetworkRequest {
-		public final String Body;
+    public static abstract class PostWithBody extends ZLNetworkRequest {
+        public final String Body;
 
-		protected PostWithBody(String url, String body, boolean quiet) {
-			super(url, quiet);
-			Body = body;
-		}
-	}
+        protected PostWithBody(String url, String body, boolean quiet) {
+            super(url, quiet);
+            Body = body;
+        }
+    }
 
-	public static abstract class FileUpload extends ZLNetworkRequest {
-		final File File;
+    public static abstract class FileUpload extends ZLNetworkRequest {
+        final File File;
 
-		protected FileUpload(String url, File file, boolean quiet) {
-			super(url, quiet);
-			File = file;
-		}
-	}
+        protected FileUpload(String url, File file, boolean quiet) {
+            super(url, quiet);
+            File = file;
+        }
+    }
 
-	String URL;
-	public final Map<String,String> Headers = new HashMap<String,String>();
+    String URL;
+    public final Map<String, String> Headers = new HashMap<String, String>();
 
-	private final boolean myIsQuiet;
+    private final boolean myIsQuiet;
 
-	private ZLNetworkRequest(String url) {
-		this(url, false);
-	}
+    private ZLNetworkRequest(String url) {
+        this(url, false);
+    }
 
-	private ZLNetworkRequest(String url, boolean quiet) {
-		URL = url;
-		myIsQuiet = quiet;
-	}
+    private ZLNetworkRequest(String url, boolean quiet) {
+        URL = url;
+        myIsQuiet = quiet;
+    }
 
-	public void addHeader(String name, String value) {
-		Headers.put(name, value);
-	}
+    public void addHeader(String name, String value) {
+        Headers.put(name, value);
+    }
 
-	public String getURL() {
-		return URL;
-	}
+    public String getURL() {
+        return URL;
+    }
 
-	public boolean isQuiet() {
-		return myIsQuiet;
-	}
+    public boolean isQuiet() {
+        return myIsQuiet;
+    }
 
-	public void doBefore() throws ZLNetworkException {
-	}
+    public void doBefore() throws ZLNetworkException {
+    }
 
-	public void handleStream(InputStream inputStream, int length) throws IOException, ZLNetworkException {
-}
+    public void handleStream(InputStream inputStream, int length) throws IOException, ZLNetworkException {
+    }
 
-	public void doAfter(boolean success) throws ZLNetworkException {
-	}
+    public void doAfter(boolean success) throws ZLNetworkException {
+    }
 }

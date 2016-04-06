@@ -19,299 +19,316 @@
 
 package org.geometerplus.zlibrary.core.application;
 
-import java.util.*;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Timer;
+import java.util.TimerTask;
 
 import org.geometerplus.zlibrary.core.util.ZLBoolean3;
 import org.geometerplus.zlibrary.core.view.ZLView;
 import org.geometerplus.zlibrary.core.view.ZLViewWidget;
 
 public abstract class ZLApplication {
-	public static ZLApplication Instance() {
-		return ourInstance;
-	}
+    public static ZLApplication Instance() {
+        return ourInstance;
+    }
 
-	private static ZLApplication ourInstance;
+    private static ZLApplication ourInstance;
 
-	public static final String NoAction = "none";
+    public static final String NoAction = "none";
 
-	private volatile ZLApplicationWindow myWindow;
-	private volatile ZLView myView;
+    private volatile ZLApplicationWindow myWindow;
+    private volatile ZLView myView;
 
-	private final HashMap<String,ZLAction> myIdToActionMap = new HashMap<String,ZLAction>();
+    private final HashMap<String, ZLAction> myIdToActionMap = new HashMap<String, ZLAction>();
 
-	protected ZLApplication() {
-		ourInstance = this;
-	}
+    protected ZLApplication() {
+        ourInstance = this;
+    }
 
-	protected final void setView(ZLView view) {
-		if (view != null) {
-			myView = view;
-			final ZLViewWidget widget = getViewWidget();
-			if (widget != null) {
-				widget.reset();
-				widget.repaint();
-			}
-			hideActivePopup();
-		}
-	}
+    protected final void setView(ZLView view) {
+        if (view != null) {
+            myView = view;
+            final ZLViewWidget widget = getViewWidget();
+            if (widget != null) {
+                widget.reset();
+                widget.repaint();
+            }
+            hideActivePopup();
+        }
+    }
 
-	public final ZLView getCurrentView() {
-		return myView;
-	}
+    public final ZLView getCurrentView() {
+        return myView;
+    }
 
-	public final void setWindow(ZLApplicationWindow window) {
-		myWindow = window;
-	}
+    public final void setWindow(ZLApplicationWindow window) {
+        myWindow = window;
+    }
 
-	public final void initWindow() {
-		setView(myView);
-	}
+    public final void initWindow() {
+        setView(myView);
+    }
 
-	protected void setTitle(String title) {
-		if (myWindow != null) {
-			myWindow.setWindowTitle(title);
-		}
-	}
+    protected void setTitle(String title) {
+        if (myWindow != null) {
+            myWindow.setWindowTitle(title);
+        }
+    }
 
-	protected void showErrorMessage(String resourceKey) {
-		if (myWindow != null) {
-			myWindow.showErrorMessage(resourceKey);
-		}
-	}
+    protected void showErrorMessage(String resourceKey) {
+        if (myWindow != null) {
+            myWindow.showErrorMessage(resourceKey);
+        }
+    }
 
-	protected void showErrorMessage(String resourceKey, String parameter) {
-		if (myWindow != null) {
-			myWindow.showErrorMessage(resourceKey, parameter);
-		}
-	}
+    protected void showErrorMessage(String resourceKey, String parameter) {
+        if (myWindow != null) {
+            myWindow.showErrorMessage(resourceKey, parameter);
+        }
+    }
 
-	public interface SynchronousExecutor {
-		void execute(Runnable action, Runnable uiPostAction);
-		void executeAux(String key, Runnable action);
-	}
+    public interface SynchronousExecutor {
 
-	private final SynchronousExecutor myDummyExecutor = new SynchronousExecutor() {
-		public void execute(Runnable action, Runnable uiPostAction) {
-			action.run();
-		}
+        void execute(Runnable action, Runnable uiPostAction);
 
-		public void executeAux(String key, Runnable action) {
-			action.run();
-		}
-	};
+        void executeAux(String key, Runnable action);
+    }
 
-	protected SynchronousExecutor createExecutor(String key) {
-		if (myWindow != null) {
-			return myWindow.createExecutor(key);
-		} else {
-			return myDummyExecutor;
-		}
-	}
+    private final SynchronousExecutor myDummyExecutor = new SynchronousExecutor() {
+        @Override
+        public void execute(Runnable action, Runnable uiPostAction) {
+            action.run();
+        }
 
-	protected void processException(Exception e) {
-		if (myWindow != null) {
-			myWindow.processException(e);
-		}
-	}
+        @Override
+        public void executeAux(String key, Runnable action) {
+            action.run();
+        }
+    };
 
-	public final ZLViewWidget getViewWidget() {
-		return myWindow != null ? myWindow.getViewWidget() : null;
-	}
+    protected SynchronousExecutor createExecutor(String key) {
+        if (myWindow != null) {
+            return myWindow.createExecutor(key);
+        } else {
+            return myDummyExecutor;
+        }
+    }
 
-	public final void onRepaintFinished() {
-		if (myWindow != null) {
-			myWindow.refresh();
-		}
-		for (PopupPanel popup : popupPanels()) {
-			popup.update();
-		}
-	}
+    protected void processException(Exception e) {
+        if (myWindow != null) {
+            myWindow.processException(e);
+        }
+    }
 
-	public final void hideActivePopup() {
-		if (myActivePopup != null) {
-			myActivePopup.hide_();
-			myActivePopup = null;
-		}
-	}
+    public final ZLViewWidget getViewWidget() {
+        return myWindow != null ? myWindow.getViewWidget() : null;
+    }
 
-	public final void showPopup(String id) {
-		hideActivePopup();
-		myActivePopup = myPopups.get(id);
-		if (myActivePopup != null) {
-			myActivePopup.show_();
-		}
-	}
+    public final void onRepaintFinished() {
+        if (myWindow != null) {
+            myWindow.refresh();
+        }
+        for (PopupPanel popup : popupPanels()) {
+            popup.update();
+        }
+    }
 
-	public final void addAction(String actionId, ZLAction action) {
-		myIdToActionMap.put(actionId, action);
-	}
+    public final void hideActivePopup() {
+        if (myActivePopup != null) {
+            myActivePopup.hide_();
+            myActivePopup = null;
+        }
+    }
 
-	public final void removeAction(String actionId) {
-		myIdToActionMap.remove(actionId);
-	}
+    public final void showPopup(String id) {
+        hideActivePopup();
+        myActivePopup = myPopups.get(id);
+        if (myActivePopup != null) {
+            myActivePopup.show_();
+        }
+    }
 
-	public final boolean isActionVisible(String actionId) {
-		final ZLAction action = myIdToActionMap.get(actionId);
-		return action != null && action.isVisible();
-	}
+    public final void addAction(String actionId, ZLAction action) {
+        myIdToActionMap.put(actionId, action);
+    }
 
-	public final boolean isActionEnabled(String actionId) {
-		final ZLAction action = myIdToActionMap.get(actionId);
-		return action != null && action.isEnabled();
-	}
+    public final void removeAction(String actionId) {
+        myIdToActionMap.remove(actionId);
+    }
 
-	public final ZLBoolean3 isActionChecked(String actionId) {
-		final ZLAction action = myIdToActionMap.get(actionId);
-		return action != null ? action.isChecked() : ZLBoolean3.B3_UNDEFINED;
-	}
+    public final boolean isActionVisible(String actionId) {
+        final ZLAction action = myIdToActionMap.get(actionId);
+        return action != null && action.isVisible();
+    }
 
-	public final void runAction(String actionId, Object ... params) {
-		final ZLAction action = myIdToActionMap.get(actionId);
-		if (action != null) {
-			action.checkAndRun(params);
-		}
-	}
+    public final boolean isActionEnabled(String actionId) {
+        final ZLAction action = myIdToActionMap.get(actionId);
+        return action != null && action.isEnabled();
+    }
 
-	//may be protected
-	abstract public ZLKeyBindings keyBindings();
+    public final ZLBoolean3 isActionChecked(String actionId) {
+        final ZLAction action = myIdToActionMap.get(actionId);
+        return action != null ? action.isChecked() : ZLBoolean3.B3_UNDEFINED;
+    }
 
-	public final boolean runActionByKey(int key, boolean longPress) {
-		final String actionId = keyBindings().getBinding(key, longPress);
-		if (actionId != null) {
-			final ZLAction action = myIdToActionMap.get(actionId);
-			return action != null && action.checkAndRun();
-		}
-		return false;
-	}
+    public final void runAction(String actionId, Object... params) {
+        final ZLAction action = myIdToActionMap.get(actionId);
+        if (action != null) {
+            action.checkAndRun(params);
+        }
+    }
 
-	public boolean closeWindow() {
-		onWindowClosing();
-		if (myWindow != null) {
-			myWindow.close();
-		}
-		return true;
-	}
+    // may be protected
+    abstract public ZLKeyBindings keyBindings();
 
-	public void onWindowClosing() {
-	}
+    public final boolean runActionByKey(int key, boolean longPress) {
+        final String actionId = keyBindings().getBinding(key, longPress);
+        if (actionId != null) {
+            final ZLAction action = myIdToActionMap.get(actionId);
+            return action != null && action.checkAndRun();
+        }
+        return false;
+    }
 
-	//Action
-	static abstract public class ZLAction {
-		public boolean isVisible() {
-			return true;
-		}
+    public boolean closeWindow() {
+        onWindowClosing();
+        if (myWindow != null) {
+            myWindow.close();
+        }
+        return true;
+    }
 
-		public boolean isEnabled() {
-			return isVisible();
-		}
+    public void onWindowClosing() {
+    }
 
-		public ZLBoolean3 isChecked() {
-			return ZLBoolean3.B3_UNDEFINED;
-		}
+    // Action
+    static abstract public class ZLAction {
 
-		public final boolean checkAndRun(Object ... params) {
-			if (isEnabled()) {
-				run(params);
-				return true;
-			}
-			return false;
-		}
+        public boolean isVisible() {
+            return true;
+        }
 
-		abstract protected void run(Object ... params);
-	}
+        public boolean isEnabled() {
+            return isVisible();
+        }
 
-	public static abstract class PopupPanel {
-		protected final ZLApplication Application;
+        public ZLBoolean3 isChecked() {
+            return ZLBoolean3.B3_UNDEFINED;
+        }
 
-		protected PopupPanel(ZLApplication application) {
-			application.myPopups.put(getId(), this);
-			Application = application;
-		}
+        public final boolean checkAndRun(Object... params) {
+            if (isEnabled()) {
+                run(params);
+                return true;
+            }
+            return false;
+        }
 
-		abstract public String getId();
-		abstract protected void update();
-		abstract protected void hide_();
-		abstract protected void show_();
-	}
+        abstract protected void run(Object... params);
+    }
 
-	private final HashMap<String,PopupPanel> myPopups = new HashMap<String,PopupPanel>();
-	private PopupPanel myActivePopup;
-	public final Collection<PopupPanel> popupPanels() {
-		return myPopups.values();
-	}
-	public final PopupPanel getActivePopup() {
-		return myActivePopup;
-	}
-	public final PopupPanel getPopupById(String id) {
-		return myPopups.get(id);
-	}
+    public static abstract class PopupPanel {
+        protected final ZLApplication Application;
 
-	public int getBatteryLevel() {
-		return (myWindow != null) ? myWindow.getBatteryLevel() : 0;
-	}
+        protected PopupPanel(ZLApplication application) {
+            application.myPopups.put(getId(), this);
+            Application = application;
+        }
 
-	private volatile Timer myTimer;
-	private final HashMap<Runnable,Long> myTimerTaskPeriods = new HashMap<Runnable,Long>();
-	private final HashMap<Runnable,TimerTask> myTimerTasks = new HashMap<Runnable,TimerTask>();
-	private static class MyTimerTask extends TimerTask {
-		private final Runnable myRunnable;
+        abstract public String getId();
 
-		MyTimerTask(Runnable runnable) {
-			myRunnable = runnable;
-		}
+        abstract protected void update();
 
-		@Override
-		public void run() {
-			myRunnable.run();
-		}
-	}
+        abstract protected void hide_();
 
-	private void addTimerTaskInternal(Runnable runnable, long periodMilliseconds) {
-		final TimerTask task = new MyTimerTask(runnable);
-		myTimer.schedule(task, periodMilliseconds / 2, periodMilliseconds);
-		myTimerTasks.put(runnable, task);
-	}
+        abstract protected void show_();
+    }
 
-	private final Object myTimerLock = new Object();
-	public final void startTimer() {
-		synchronized (myTimerLock) {
-			if (myTimer == null) {
-				myTimer = new Timer();
-				for (Map.Entry<Runnable,Long> entry : myTimerTaskPeriods.entrySet()) {
-					addTimerTaskInternal(entry.getKey(), entry.getValue());
-				}
-			}
-		}
-	}
+    private final HashMap<String, PopupPanel> myPopups = new HashMap<String, PopupPanel>();
+    private PopupPanel myActivePopup;
 
-	public final void stopTimer() {
-		synchronized (myTimerLock) {
-			if (myTimer != null) {
-				myTimer.cancel();
-				myTimer = null;
-				myTimerTasks.clear();
-			}
-		}
-	}
+    public final Collection<PopupPanel> popupPanels() {
+        return myPopups.values();
+    }
 
-	public final void addTimerTask(Runnable runnable, long periodMilliseconds) {
-		synchronized (myTimerLock) {
-			removeTimerTask(runnable);
-			myTimerTaskPeriods.put(runnable, periodMilliseconds);
-			if (myTimer != null) {
-				addTimerTaskInternal(runnable, periodMilliseconds);
-			}
-		}
-	}
+    public final PopupPanel getActivePopup() {
+        return myActivePopup;
+    }
 
-	public final void removeTimerTask(Runnable runnable) {
-		synchronized (myTimerLock) {
-			TimerTask task = myTimerTasks.get(runnable);
-			if (task != null) {
-				task.cancel();
-				myTimerTasks.remove(runnable);
-			}
-			myTimerTaskPeriods.remove(runnable);
-		}
-	}
+    public final PopupPanel getPopupById(String id) {
+        return myPopups.get(id);
+    }
+
+    public int getBatteryLevel() {
+        return (myWindow != null) ? myWindow.getBatteryLevel() : 0;
+    }
+
+    private volatile Timer myTimer;
+    private final HashMap<Runnable, Long> myTimerTaskPeriods = new HashMap<Runnable, Long>();
+    private final HashMap<Runnable, TimerTask> myTimerTasks = new HashMap<Runnable, TimerTask>();
+
+    private static class MyTimerTask extends TimerTask {
+        private final Runnable myRunnable;
+
+        MyTimerTask(Runnable runnable) {
+            myRunnable = runnable;
+        }
+
+        @Override
+        public void run() {
+            myRunnable.run();
+        }
+    }
+
+    private void addTimerTaskInternal(Runnable runnable, long periodMilliseconds) {
+        final TimerTask task = new MyTimerTask(runnable);
+        myTimer.schedule(task, periodMilliseconds / 2, periodMilliseconds);
+        myTimerTasks.put(runnable, task);
+    }
+
+    private final Object myTimerLock = new Object();
+
+    public final void startTimer() {
+        synchronized (myTimerLock) {
+            if (myTimer == null) {
+                myTimer = new Timer();
+                for (Map.Entry<Runnable, Long> entry : myTimerTaskPeriods.entrySet()) {
+                    addTimerTaskInternal(entry.getKey(), entry.getValue());
+                }
+            }
+        }
+    }
+
+    public final void stopTimer() {
+        synchronized (myTimerLock) {
+            if (myTimer != null) {
+                myTimer.cancel();
+                myTimer = null;
+                myTimerTasks.clear();
+            }
+        }
+    }
+
+    public final void addTimerTask(Runnable runnable, long periodMilliseconds) {
+        synchronized (myTimerLock) {
+            removeTimerTask(runnable);
+            myTimerTaskPeriods.put(runnable, periodMilliseconds);
+            if (myTimer != null) {
+                addTimerTaskInternal(runnable, periodMilliseconds);
+            }
+        }
+    }
+
+    public final void removeTimerTask(Runnable runnable) {
+        synchronized (myTimerLock) {
+            TimerTask task = myTimerTasks.get(runnable);
+            if (task != null) {
+                task.cancel();
+                myTimerTasks.remove(runnable);
+            }
+            myTimerTaskPeriods.remove(runnable);
+        }
+    }
 }

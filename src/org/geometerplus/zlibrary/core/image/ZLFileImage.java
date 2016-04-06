@@ -19,15 +19,19 @@
 
 package org.geometerplus.zlibrary.core.image;
 
-import java.io.*;
+import java.io.IOException;
+import java.io.InputStream;
 
 import org.geometerplus.zlibrary.core.drm.FileEncryptionInfo;
 import org.geometerplus.zlibrary.core.filesystem.ZLFile;
-import org.geometerplus.zlibrary.core.util.*;
+import org.geometerplus.zlibrary.core.util.Base64InputStream;
+import org.geometerplus.zlibrary.core.util.HexInputStream;
+import org.geometerplus.zlibrary.core.util.MergedInputStream;
+import org.geometerplus.zlibrary.core.util.SliceInputStream;
 
 public class ZLFileImage implements ZLStreamImage {
+    
 	public static final String SCHEME = "imagefile";
-
 	public static final String ENCODING_NONE = "";
 	public static final String ENCODING_HEX = "hex";
 	public static final String ENCODING_BASE64 = "base64";
@@ -42,13 +46,7 @@ public class ZLFileImage implements ZLStreamImage {
 				offsets[i] = Integer.parseInt(data[3 + i]);
 				lengths[i] = Integer.parseInt(data[3 + count + i]);
 			}
-			return new ZLFileImage(
-				ZLFile.createFileByPath(data[0]),
-				data[1],
-				offsets,
-				lengths,
-				null
-			);
+			return new ZLFileImage( ZLFile.createFileByPath(data[0]), data[1], offsets, lengths, null );
 		} catch (Exception e) {
 			e.printStackTrace();
 			return null;
@@ -77,7 +75,8 @@ public class ZLFileImage implements ZLStreamImage {
 		this(file, ENCODING_NONE, 0, (int)file.size());
 	}
 
-	public String getURI() {
+	@Override
+    public String getURI() {
 		String result = SCHEME + "://" + myFile.getPath() + "\000" + myEncoding + "\000" + myOffsets.length;
 		for (int offset : myOffsets) {
 			result += "\000" + offset;

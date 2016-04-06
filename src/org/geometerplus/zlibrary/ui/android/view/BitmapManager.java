@@ -19,13 +19,15 @@
 
 package org.geometerplus.zlibrary.ui.android.view;
 
-import android.graphics.Bitmap;
-
 import org.geometerplus.zlibrary.core.view.ZLView;
+
+import android.graphics.Bitmap;
+import android.util.Log;
 
 class BitmapManager {
 	private final int SIZE = 2;
 	private final Bitmap[] myBitmaps = new Bitmap[SIZE];
+    //一个Index对应一张Bitmap
 	private final ZLView.PageIndex[] myIndexes = new ZLView.PageIndex[SIZE];
 
 	private int myWidth;
@@ -49,14 +51,23 @@ class BitmapManager {
 			System.gc();
 			System.gc();
 		}
-	}
-
-	Bitmap getBitmap(ZLView.PageIndex index) {
+	} 
+    
+    public Bitmap getBitmap(ZLView.PageIndex index){
+        Log.i("ZYStudio", "getBitmap  start:"+"|"+index.toString()+"|"+System.currentTimeMillis()%10000);
+        Bitmap bit=getBitmapInternal(index);
+        Log.i("ZYStudio", "getBitmap  end:"+"|"+index.toString()+"|"+System.currentTimeMillis()%10000);
+        return bit;
+    }
+	
+	private Bitmap getBitmapInternal(ZLView.PageIndex index) {
 		for (int i = 0; i < SIZE; ++i) {
+            //myBitmap只存了两张图片，但是有去取第三张图片的时候
 			if (index == myIndexes[i]) {
 				return myBitmaps[i];
 			}
 		}
+        //getInternalIndex中有转换,这个index不会大于１的.
 		final int iIndex = getInternalIndex(index);
 		myIndexes[iIndex] = index;
 		if (myBitmaps[iIndex] == null) {
@@ -68,7 +79,7 @@ class BitmapManager {
 				myBitmaps[iIndex] = Bitmap.createBitmap(myWidth, myHeight, Bitmap.Config.RGB_565);
 			}
 		}
-		myWidget.drawOnBitmap(myBitmaps[iIndex], index);
+        myWidget.drawOnBitmap(myBitmaps[iIndex], index);
 		return myBitmaps[iIndex];
 	}
 
@@ -79,6 +90,7 @@ class BitmapManager {
 			}
 		}
 		for (int i = 0; i < SIZE; ++i) {
+            //就是哪一个不是当前页面的cache，哪一个就是要返回的那个index了
 			if (myIndexes[i] != ZLView.PageIndex.current) {
 				return i;
 			}

@@ -27,7 +27,7 @@ public final class ZLTextWord extends ZLTextElement {
 	public final int Length;
 	private int myWidth = -1;
 	private Mark myMark;
-	private int myParagraphOffset;
+	private final int myParagraphOffset;
 
 	class Mark {
 		public final int Start;

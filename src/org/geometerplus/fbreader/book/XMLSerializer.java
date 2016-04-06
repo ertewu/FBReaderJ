@@ -19,20 +19,23 @@
 
 package org.geometerplus.fbreader.book;
 
-import java.util.*;
 import java.text.DateFormat;
-
-import org.xml.sax.Attributes;
-import org.xml.sax.SAXException;
-import org.xml.sax.helpers.DefaultHandler;
-import android.util.Xml;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.LinkedList;
+import java.util.Locale;
 
 import org.geometerplus.zlibrary.core.constants.XMLNamespaces;
 import org.geometerplus.zlibrary.core.filesystem.ZLFile;
 import org.geometerplus.zlibrary.core.util.RationalNumber;
 import org.geometerplus.zlibrary.core.util.ZLColor;
-
 import org.geometerplus.zlibrary.text.view.ZLTextPosition;
+import org.xml.sax.Attributes;
+import org.xml.sax.SAXException;
+import org.xml.sax.helpers.DefaultHandler;
+
+import zystudio.debug.FBDebug;
+import android.util.Xml;
 
 class XMLSerializer extends AbstractSerializer {
 	@Override
@@ -250,9 +253,12 @@ class XMLSerializer extends AbstractSerializer {
 	@Override
 	public Book deserializeBook(String xml) {
 		try {
+            FBDebug.logLoadBook("XMLSerializer.deserializeBook():"+xml);
 			final BookDeserializer deserializer = new BookDeserializer();
 			Xml.parse(xml, deserializer);
-			return deserializer.getBook();
+			Book myBook=deserializer.getBook();
+            FBDebug.logLoadBook("XMLSerializer.deserializeBook()_result:"+myBook.getClass().getSimpleName());
+            return myBook;
 		} catch (SAXException e) {
 			System.err.println(xml);
 			e.printStackTrace();
@@ -702,8 +708,8 @@ class XMLSerializer extends AbstractSerializer {
 			READ_FILTER_SIMPLE
 		}
 
-		private LinkedList<State> myStateStack = new LinkedList<State>();
-		private LinkedList<Filter> myFilterStack = new LinkedList<Filter>();
+		private final LinkedList<State> myStateStack = new LinkedList<State>();
+		private final LinkedList<Filter> myFilterStack = new LinkedList<Filter>();
 		private Filter myFilter;
 		private int myLimit = -1;
 		private int myPage = -1;

@@ -19,44 +19,51 @@
 
 package org.geometerplus.fbreader.book;
 
-import java.util.*;
+import java.util.Collections;
+import java.util.LinkedList;
+import java.util.List;
 
 import org.geometerplus.zlibrary.core.filesystem.ZLFile;
 
 public abstract class AbstractBookCollection implements IBookCollection {
-	private final List<Listener> myListeners = Collections.synchronizedList(new LinkedList<Listener>());
 
-	public void addListener(Listener listener) {
-		if (!myListeners.contains(listener)) {
-			myListeners.add(listener);
-		}
-	}
+    private final List<Listener> myListeners = Collections.synchronizedList(new LinkedList<Listener>());
 
-	public void removeListener(Listener listener) {
-		myListeners.remove(listener);
-	}
+    @Override
+    public void addListener(Listener listener) {
+        if (!myListeners.contains(listener)) {
+            myListeners.add(listener);
+        }
+    }
 
-	protected boolean hasListeners() {
-		return !myListeners.isEmpty();
-	}
+    @Override
+    public void removeListener(Listener listener) {
+        myListeners.remove(listener);
+    }
 
-	protected void fireBookEvent(BookEvent event, Book book) {
-		synchronized (myListeners) {
-			for (Listener l : myListeners) {
-				l.onBookEvent(event, book);
-			}
-		}
-	}
+    protected boolean hasListeners() {
+        return !myListeners.isEmpty();
+    }
 
-	protected void fireBuildEvent(Status status) {
-		synchronized (myListeners) {
-			for (Listener l : myListeners) {
-				l.onBuildEvent(status);
-			}
-		}
-	}
+    protected void fireBookEvent(BookEvent event, Book book) {
+        synchronized (myListeners) {
+            for (Listener l : myListeners) {
+                l.onBookEvent(event, book);
+            }
+        }
+    }
 
-	public final Book getBookByFile(String path) {
-		return getBookByFile(ZLFile.createFileByPath(path));
-	}
+    protected void fireBuildEvent(Status status) {
+        synchronized (myListeners) {
+            for (Listener l : myListeners) {
+                l.onBuildEvent(status);
+            }
+        }
+    }
+
+    @Override
+    public final Book getBookByFile(String path) {
+        return getBookByFile(ZLFile.createFileByPath(path));
+    }
+    
 }

@@ -21,78 +21,89 @@ package org.geometerplus.android.fbreader.httpd;
 
 import java.io.IOException;
 
+import org.geometerplus.android.fbreader.util.AndroidImageSynchronizer;
+
 import android.app.Service;
-import android.content.*;
+import android.content.ComponentName;
+import android.content.Intent;
+import android.content.ServiceConnection;
 import android.os.IBinder;
 import android.os.RemoteException;
 
-import org.geometerplus.android.fbreader.util.AndroidImageSynchronizer;
-
 public class DataService extends Service {
-	final AndroidImageSynchronizer ImageSynchronizer = new AndroidImageSynchronizer(this);
 
-	public static class Connection implements ServiceConnection {
-		private DataInterface myDataInterface;
+    final AndroidImageSynchronizer ImageSynchronizer = new AndroidImageSynchronizer(this);
 
-		public void onServiceConnected(ComponentName componentName, IBinder binder) {
-			myDataInterface = DataInterface.Stub.asInterface(binder);
-		}
+    public static class Connection implements ServiceConnection {
+        
+        private DataInterface myDataInterface;
 
-		public void onServiceDisconnected(ComponentName componentName) {
-			myDataInterface = null;
-		}
+        @Override
+        public void onServiceConnected(ComponentName componentName, IBinder binder) {
+            myDataInterface = DataInterface.Stub.asInterface(binder);
+        }
 
-		public int getPort() {
-			try {
-				return myDataInterface != null ? myDataInterface.getPort() : -1;
-			} catch (RemoteException e) {
-				return -1;
-			}
-		}
-	}
+        @Override
+        public void onServiceDisconnected(ComponentName componentName) {
+            myDataInterface = null;
+        }
 
-	private DataServer myServer;
-	private volatile int myPort = -1;
+        public int getPort() {
+            try {
+                return myDataInterface != null ? myDataInterface.getPort() : -1;
+            } catch (RemoteException e) {
+                return -1;
+            }
+        }
+    }
 
-	@Override
-	public void onCreate() {
-		new Thread(new Runnable() {
-			public void run () {
-				for (int port = 12000; port < 12500; ++port) {
-					try {
-						myServer = new DataServer(DataService.this, port);
-						myServer.start();
-						myPort = port;
-						break;
-					} catch (IOException e) {
-						myServer = null;
-					}
-				}
-			}
-		}).start();
-	}
+    private DataServer myServer;
+    private volatile int myPort = -1;
 
-	@Override
-	public void onDestroy() {
-		if (myServer != null) {
-			new Thread(new Runnable() {
-				public void run () {
-					if (myServer != null) {
-						myServer.stop();
-						myServer = null;
-					}
-				}
-			}).start();
-		}
-		ImageSynchronizer.clear();
-		super.onDestroy();
-	}
+    @Override
+    public void onCreate() {
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                for (int port = 12000; port < 12500; ++port) {
+                    try {
+                        //这里只是随机用了一个port只是新建了一个DataServer
+                        myServer = new DataServer(DataService.this, port);
+                        myServer.start();
+                        myPort = port;
+                        break;
+                    } catch (IOException e) {
+                        myServer = null;
+                    }
+                }
+            }
+        }).start();
+    }
 
-	public IBinder onBind(Intent intent) {
-		return new DataInterface.Stub() {
-			public int getPort() {
-				return myPort;
-			}
-		};
-	}
+    @Override
+    public void onDestroy() {
+        if (myServer != null) {
+            new Thread(new Runnable() {
+                @Override
+                public void run() {
+                    if (myServer != null) {
+                        myServer.stop();
+                        myServer = null;
+                    }
+                }
+            }).start();
+        }
+        ImageSynchronizer.clear();
+        super.onDestroy();
+    }
+
+    @Override
+    public IBinder onBind(Intent intent) {
+        return new DataInterface.Stub() {
+            @Override
+            public int getPort() {
+                return myPort;
+            }
+        };
+    }
 }

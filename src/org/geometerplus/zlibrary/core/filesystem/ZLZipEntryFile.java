@@ -19,12 +19,19 @@
 
 package org.geometerplus.zlibrary.core.filesystem;
 
-import java.io.*;
-import java.util.*;
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
 
-import org.amse.ys.zip.*;
+import org.amse.ys.zip.LocalFileHeader;
+import org.amse.ys.zip.ZipFile;
 
 final class ZLZipEntryFile extends ZLArchiveEntryFile {
+    
 	static List<ZLFile> archiveEntries(ZLFile archive) {
 		try {
 			final ZipFile zf = ZLZipEntryFile.getZipFile(archive);
@@ -86,4 +93,5 @@ final class ZLZipEntryFile extends ZLArchiveEntryFile {
 	public InputStream getInputStream() throws IOException {
 		return getZipFile(myParent).getInputStream(myName);
 	}
+    
 }

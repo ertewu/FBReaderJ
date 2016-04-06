@@ -19,129 +19,156 @@
 
 package org.geometerplus.fbreader.book;
 
-import java.util.*;
+import java.util.Collection;
+import java.util.Date;
+import java.util.List;
+import java.util.Map;
 
 import org.geometerplus.zlibrary.core.filesystem.ZLFile;
 import org.geometerplus.zlibrary.core.util.RationalNumber;
 import org.geometerplus.zlibrary.core.util.ZLColor;
-
 import org.geometerplus.zlibrary.text.view.ZLTextFixedPosition;
 import org.geometerplus.zlibrary.text.view.ZLTextPosition;
 
 public abstract class BooksDatabase {
-	protected interface HistoryEvent {
-		int Added = 0;
-		int Opened = 1;
-	}
 
-	public static final class NotAvailable extends Exception {
-	}
+    protected interface HistoryEvent {
 
-	protected Book createBook(long id, long fileId, String title, String encoding, String language) {
-		final FileInfoSet infos = new FileInfoSet(this, fileId);
-		return createBook(id, infos.getFile(fileId), title, encoding, language);
-	}
-	protected Book createBook(long id, ZLFile file, String title, String encoding, String language) {
-		return file != null ? new Book(id, file, title, encoding, language) : null;
-	}
-	protected void addAuthor(Book book, Author author) {
-		book.addAuthorWithNoCheck(author);
-	}
-	protected void addTag(Book book, Tag tag) {
-		book.addTagWithNoCheck(tag);
-	}
-	protected void setSeriesInfo(Book book, String series, String index) {
-		book.setSeriesInfoWithNoCheck(series, index);
-	}
+        int Added = 0;
+        int Opened = 1;
+    }
 
-	protected abstract void executeAsTransaction(Runnable actions);
+    public static final class NotAvailable extends Exception {
 
-	// returns map fileId -> book
-	protected abstract Map<Long,Book> loadBooks(FileInfoSet infos, boolean existing);
-	protected abstract void setExistingFlag(Collection<Book> books, boolean flag);
-	protected abstract Book loadBook(long bookId);
-	protected abstract Book loadBookByFile(long fileId, ZLFile file);
-	protected abstract void deleteBook(long bookId);
+    }
 
-	protected abstract List<Author> listAuthors(long bookId);
-	protected abstract List<Tag> listTags(long bookId);
-	protected abstract List<String> listLabels(long bookId);
-	protected abstract SeriesInfo getSeriesInfo(long bookId);
-	protected abstract List<UID> listUids(long bookId);
-	protected abstract boolean hasVisibleBookmark(long bookId);
-	protected abstract RationalNumber getProgress(long bookId);
+    protected Book createBook(long id, long fileId, String title, String encoding, String language) {
 
-	protected abstract Long bookIdByUid(UID uid);
+        final FileInfoSet infos = new FileInfoSet(this, fileId);
+        return createBook(id, infos.getFile(fileId), title, encoding, language);
+    }
 
-	protected abstract void updateBookInfo(long bookId, long fileId, String encoding, String language, String title);
-	protected abstract long insertBookInfo(ZLFile file, String encoding, String language, String title);
-	protected abstract void deleteAllBookAuthors(long bookId);
-	protected abstract void saveBookAuthorInfo(long bookId, long index, Author author);
-	protected abstract void deleteAllBookTags(long bookId);
-	protected abstract void saveBookTagInfo(long bookId, Tag tag);
-	protected abstract void saveBookSeriesInfo(long bookId, SeriesInfo seriesInfo);
-	protected abstract void deleteAllBookUids(long bookId);
-	protected abstract void saveBookUid(long bookId, UID uid);
-	protected abstract void saveBookProgress(long bookId, RationalNumber progress);
+    protected Book createBook(long id, ZLFile file, String title, String encoding, String language) {
+        return file != null ? new Book(id, file, title, encoding, language) : null;
+    }
 
-	protected FileInfo createFileInfo(long id, String name, FileInfo parent) {
-		return new FileInfo(name, parent, id);
-	}
+    protected void addAuthor(Book book, Author author) {
+        book.addAuthorWithNoCheck(author);
+    }
 
-	protected abstract Collection<FileInfo> loadFileInfos();
-	protected abstract Collection<FileInfo> loadFileInfos(ZLFile file);
-	protected abstract Collection<FileInfo> loadFileInfos(long fileId);
-	protected abstract void removeFileInfo(long fileId);
-	protected abstract void saveFileInfo(FileInfo fileInfo);
+    protected void addTag(Book book, Tag tag) {
+        book.addTagWithNoCheck(tag);
+    }
 
-	protected abstract void addBookHistoryEvent(long bookId, int event);
-	protected abstract void removeBookHistoryEvents(long bookId, int event);
-	protected abstract List<Long> loadRecentBookIds(int event, int limit);
+    protected void setSeriesInfo(Book book, String series, String index) {
+        book.setSeriesInfoWithNoCheck(series, index);
+    }
 
-	protected abstract void setLabel(long bookId, String label);
-	protected abstract void removeLabel(long bookId, String label);
+    protected abstract void executeAsTransaction(Runnable actions);
 
-	protected Bookmark createBookmark(
-		long id, long bookId, String bookTitle, String text,
-		Date creationDate, Date modificationDate, Date accessDate, int accessCounter,
-		String modelId,
-		int start_paragraphIndex, int start_wordIndex, int start_charIndex,
-		int end_paragraphIndex, int end_wordIndex, int end_charIndex,
-		boolean isVisible,
-		int styleId
-	) {
-		return new Bookmark(
-			id, bookId, bookTitle, text,
-			creationDate, modificationDate, accessDate, accessCounter,
-			modelId,
-			start_paragraphIndex, start_wordIndex, start_charIndex,
-			end_paragraphIndex, end_wordIndex, end_charIndex,
-			isVisible,
-			styleId
-		);
-	}
+    // returns map fileId -> book
+    protected abstract Map<Long, Book> loadBooks(FileInfoSet infos, boolean existing);
 
-	protected abstract List<Bookmark> loadBookmarks(BookmarkQuery query);
-	protected abstract long saveBookmark(Bookmark bookmark);
-	protected abstract void deleteBookmark(Bookmark bookmark);
+    protected abstract void setExistingFlag(Collection<Book> books, boolean flag);
 
-	protected HighlightingStyle createStyle(int id, String name, int bgColor, int fgColor) {
-		return new HighlightingStyle(
-			id, name,
-			bgColor != -1 ? new ZLColor(bgColor) : null,
-			fgColor != -1 ? new ZLColor(fgColor) : null
-		);
-	}
-	protected abstract List<HighlightingStyle> loadStyles();
-	protected abstract void saveStyle(HighlightingStyle style);
+    protected abstract Book loadBook(long bookId);
 
-	protected abstract ZLTextFixedPosition.WithTimestamp getStoredPosition(long bookId);
-	protected abstract void storePosition(long bookId, ZLTextPosition position);
+    protected abstract Book loadBookByFile(long fileId, ZLFile file);
 
-	protected abstract Collection<String> loadVisitedHyperlinks(long bookId);
-	protected abstract void addVisitedHyperlink(long bookId, String hyperlinkId);
+    protected abstract void deleteBook(long bookId);
 
-	protected abstract String getHash(long bookId, long lastModified) throws NotAvailable;
-	protected abstract void setHash(long bookId, String hash) throws NotAvailable;
-	protected abstract List<Long> bookIdsByHash(String hash);
+    protected abstract List<Author> listAuthors(long bookId);
+
+    protected abstract List<Tag> listTags(long bookId);
+
+    protected abstract List<String> listLabels(long bookId);
+
+    protected abstract SeriesInfo getSeriesInfo(long bookId);
+
+    protected abstract List<UID> listUids(long bookId);
+
+    protected abstract boolean hasVisibleBookmark(long bookId);
+
+    protected abstract RationalNumber getProgress(long bookId);
+
+    protected abstract Long bookIdByUid(UID uid);
+
+    protected abstract void updateBookInfo(long bookId, long fileId, String encoding, String language, String title);
+
+    protected abstract long insertBookInfo(ZLFile file, String encoding, String language, String title);
+
+    protected abstract void deleteAllBookAuthors(long bookId);
+
+    protected abstract void saveBookAuthorInfo(long bookId, long index, Author author);
+
+    protected abstract void deleteAllBookTags(long bookId);
+
+    protected abstract void saveBookTagInfo(long bookId, Tag tag);
+
+    protected abstract void saveBookSeriesInfo(long bookId, SeriesInfo seriesInfo);
+
+    protected abstract void deleteAllBookUids(long bookId);
+
+    protected abstract void saveBookUid(long bookId, UID uid);
+
+    protected abstract void saveBookProgress(long bookId, RationalNumber progress);
+
+    protected FileInfo createFileInfo(long id, String name, FileInfo parent) {
+        return new FileInfo(name, parent, id);
+    }
+
+    protected abstract Collection<FileInfo> loadFileInfos();
+
+    protected abstract Collection<FileInfo> loadFileInfos(ZLFile file);
+
+    protected abstract Collection<FileInfo> loadFileInfos(long fileId);
+
+    protected abstract void removeFileInfo(long fileId);
+
+    protected abstract void saveFileInfo(FileInfo fileInfo);
+
+    protected abstract void addBookHistoryEvent(long bookId, int event);
+
+    protected abstract void removeBookHistoryEvents(long bookId, int event);
+
+    protected abstract List<Long> loadRecentBookIds(int event, int limit);
+
+    protected abstract void setLabel(long bookId, String label);
+
+    protected abstract void removeLabel(long bookId, String label);
+
+    protected Bookmark createBookmark(long id, long bookId, String bookTitle, String text, Date creationDate, Date modificationDate, Date accessDate,
+            int accessCounter, String modelId, int start_paragraphIndex, int start_wordIndex, int start_charIndex, int end_paragraphIndex,
+            int end_wordIndex, int end_charIndex, boolean isVisible, int styleId) {
+        return new Bookmark(id, bookId, bookTitle, text, creationDate, modificationDate, accessDate, accessCounter, modelId, start_paragraphIndex,
+                start_wordIndex, start_charIndex, end_paragraphIndex, end_wordIndex, end_charIndex, isVisible, styleId);
+    }
+
+    protected abstract List<Bookmark> loadBookmarks(BookmarkQuery query);
+
+    protected abstract long saveBookmark(Bookmark bookmark);
+
+    protected abstract void deleteBookmark(Bookmark bookmark);
+
+    protected HighlightingStyle createStyle(int id, String name, int bgColor, int fgColor) {
+        return new HighlightingStyle(id, name, bgColor != -1 ? new ZLColor(bgColor) : null, fgColor != -1 ? new ZLColor(fgColor) : null);
+    }
+
+    protected abstract List<HighlightingStyle> loadStyles();
+
+    protected abstract void saveStyle(HighlightingStyle style);
+
+    protected abstract ZLTextFixedPosition.WithTimestamp getStoredPosition(long bookId);
+
+    protected abstract void storePosition(long bookId, ZLTextPosition position);
+
+    protected abstract Collection<String> loadVisitedHyperlinks(long bookId);
+
+    protected abstract void addVisitedHyperlink(long bookId, String hyperlinkId);
+
+    protected abstract String getHash(long bookId, long lastModified) throws NotAvailable;
+
+    protected abstract void setHash(long bookId, String hash) throws NotAvailable;
+
+    protected abstract List<Long> bookIdsByHash(String hash);
 }

@@ -19,14 +19,17 @@
 
 package org.geometerplus.fbreader.library;
 
-import java.util.*;
+import java.util.Comparator;
+import java.util.TreeSet;
 
+import org.geometerplus.fbreader.book.Book;
+import org.geometerplus.fbreader.book.BookUtil;
+import org.geometerplus.fbreader.formats.PluginCollection;
+import org.geometerplus.fbreader.tree.FBTree;
 import org.geometerplus.zlibrary.core.filesystem.ZLFile;
 import org.geometerplus.zlibrary.core.image.ZLImage;
 
-import org.geometerplus.fbreader.book.*;
-import org.geometerplus.fbreader.formats.PluginCollection;
-import org.geometerplus.fbreader.tree.FBTree;
+import zystudio.debug.FBDebug;
 
 public class FileTree extends LibraryTree {
 	private final ZLFile myFile;
@@ -104,6 +107,7 @@ public class FileTree extends LibraryTree {
 				myBook = NULL_BOOK;
 			}
 		}
+        FBDebug.logLoadBook("FileTree.getBook:"+myBook==null?null:myBook.toString());
 		return myBook instanceof Book ? (Book)myBook : null;
 	}
 
@@ -168,7 +172,8 @@ public class FileTree extends LibraryTree {
 	}
 
 	private static final Comparator<ZLFile> ourFileComparator = new Comparator<ZLFile>() {
-		public int compare(ZLFile file0, ZLFile file1) {
+		@Override
+        public int compare(ZLFile file0, ZLFile file1) {
 			final boolean isDir = file0.isDirectory();
 			if (isDir != file1.isDirectory()) {
 				return isDir ? -1 : 1;

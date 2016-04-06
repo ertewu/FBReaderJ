@@ -20,14 +20,16 @@
 package org.geometerplus.zlibrary.text.model;
 
 class ZLTextSpecialParagraphImpl extends ZLTextParagraphImpl {
-	private final byte myKind;
 
-	ZLTextSpecialParagraphImpl(byte kind, ZLTextPlainModel model, int offset) {
-		super(model, offset);
-		myKind = kind;
-	}
+    private final byte myKind;
 
-	public byte getKind() {
-		return myKind;
-	}
+    ZLTextSpecialParagraphImpl(byte kind, ZLTextPlainModel model, int offset) {
+        super(model, offset);
+        myKind = kind;
+    }
+
+    @Override
+    public byte getKind() {
+        return myKind;
+    }
 }

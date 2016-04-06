@@ -19,126 +19,124 @@
 
 package org.geometerplus.fbreader.book;
 
-import java.io.InputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.lang.ref.WeakReference;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
-import java.util.*;
-
-import org.geometerplus.zlibrary.core.filesystem.*;
-import org.geometerplus.zlibrary.core.image.ZLImage;
+import java.util.Formatter;
+import java.util.Locale;
+import java.util.WeakHashMap;
 
 import org.geometerplus.fbreader.bookmodel.BookReadingException;
 import org.geometerplus.fbreader.formats.FormatPlugin;
 import org.geometerplus.fbreader.formats.PluginCollection;
+import org.geometerplus.zlibrary.core.filesystem.ZLFile;
+import org.geometerplus.zlibrary.core.filesystem.ZLResourceFile;
+import org.geometerplus.zlibrary.core.image.ZLImage;
 
 public abstract class BookUtil {
-	private static final WeakReference<ZLImage> NULL_IMAGE = new WeakReference<ZLImage>(null);
-	private static final WeakHashMap<ZLFile,WeakReference<ZLImage>> ourCovers =
-		new WeakHashMap<ZLFile,WeakReference<ZLImage>>();
+    
+    private static final WeakReference<ZLImage> NULL_IMAGE = new WeakReference<ZLImage>(null);
+    private static final WeakHashMap<ZLFile, WeakReference<ZLImage>> ourCovers = new WeakHashMap<ZLFile, WeakReference<ZLImage>>();
 
-	static FormatPlugin getPluginOrNull(ZLFile file) {
-		return PluginCollection.Instance().getPlugin(file);
-	}
+    static FormatPlugin getPluginOrNull(ZLFile file) {
+        return PluginCollection.Instance().getPlugin(file);
+    }
 
-	static FormatPlugin getPlugin(ZLFile file) throws BookReadingException {
-		final FormatPlugin plugin = PluginCollection.Instance().getPlugin(file);
-		if (plugin == null) {
-			throw new BookReadingException("pluginNotFound", file);
-		}
-		return plugin;
-	}
+    static FormatPlugin getPlugin(ZLFile file) throws BookReadingException {
+        final FormatPlugin plugin = PluginCollection.Instance().getPlugin(file);
+        if (plugin == null) {
+            throw new BookReadingException("pluginNotFound", file);
+        }
+        return plugin;
+    }
 
-	public static ZLImage getCover(Book book) {
-		if (book == null) {
-			return null;
-		}
-		synchronized (book) {
-			return getCover(book.File);
-		}
-	}
+    public static ZLImage getCover(Book book) {
+        if (book == null) {
+            return null;
+        }
+        synchronized (book) {
+            return getCover(book.File);
+        }
+    }
 
-	public static ZLImage getCover(ZLFile file) {
-		WeakReference<ZLImage> cover = ourCovers.get(file);
-		if (cover == NULL_IMAGE) {
-			return null;
-		} else if (cover != null) {
-			final ZLImage image = cover.get();
-			if (image != null) {
-				return image;
-			}
-		}
-		ZLImage image = null;
-		try {
-			image = getPlugin(file).readCover(file);
-		} catch (BookReadingException e) {
-			// ignore
-		}
-		ourCovers.put(file, image != null ? new WeakReference<ZLImage>(image) : NULL_IMAGE);
-		return image;
-	}
+    public static ZLImage getCover(ZLFile file) {
+        WeakReference<ZLImage> cover = ourCovers.get(file);
+        if (cover == NULL_IMAGE) {
+            return null;
+        } else if (cover != null) {
+            final ZLImage image = cover.get();
+            if (image != null) {
+                return image;
+            }
+        }
+        ZLImage image = null;
+        try {
+            image = getPlugin(file).readCover(file);
+        } catch (BookReadingException e) {
+            // ignore
+        }
+        ourCovers.put(file, image != null ? new WeakReference<ZLImage>(image) : NULL_IMAGE);
+        return image;
+    }
 
-	public static String getAnnotation(Book book) {
-		try {
-			return book.getPlugin().readAnnotation(book.File);
-		} catch (BookReadingException e) {
-			return null;
-		}
-	}
+    public static String getAnnotation(Book book) {
+        try {
+            return book.getPlugin().readAnnotation(book.File);
+        } catch (BookReadingException e) {
+            return null;
+        }
+    }
 
-	public static ZLResourceFile getHelpFile() {
-		final Locale locale = Locale.getDefault();
+    public static ZLResourceFile getHelpFile() {
+        final Locale locale = Locale.getDefault();
 
-		ZLResourceFile file = ZLResourceFile.createResourceFile(
-			"data/intro/intro-" + locale.getLanguage() + "_" + locale.getCountry() + ".epub"
-		);
-		if (file.exists()) {
-			return file;
-		}
+        ZLResourceFile file = ZLResourceFile.createResourceFile("data/intro/intro-" + locale.getLanguage() + "_" + locale.getCountry() + ".epub");
+        if (file.exists()) {
+            return file;
+        }
 
-		file = ZLResourceFile.createResourceFile(
-			"data/intro/intro-" + locale.getLanguage() + ".epub"
-		);
-		if (file.exists()) {
-			return file;
-		}
+        file = ZLResourceFile.createResourceFile("data/intro/intro-" + locale.getLanguage() + ".epub");
+        if (file.exists()) {
+            return file;
+        }
 
-		return ZLResourceFile.createResourceFile("data/intro/intro-en.epub");
-	}
+        return ZLResourceFile.createResourceFile("data/intro/intro-en.epub");
+    }
 
-	public static UID createUid(ZLFile file, String algorithm) {
-		InputStream stream = null;
+    public static UID createUid(ZLFile file, String algorithm) {
+        InputStream stream = null;
 
-		try {
-			final MessageDigest hash = MessageDigest.getInstance(algorithm);
-			stream = file.getInputStream();
+        try {
+            final MessageDigest hash = MessageDigest.getInstance(algorithm);
+            stream = file.getInputStream();
 
-			final byte[] buffer = new byte[2048];
-			while (true) {
-				final int nread = stream.read(buffer);
-				if (nread == -1) {
-					break;
-				}
-				hash.update(buffer, 0, nread);
-			}
+            final byte[] buffer = new byte[2048];
+            while (true) {
+                final int nread = stream.read(buffer);
+                if (nread == -1) {
+                    break;
+                }
+                hash.update(buffer, 0, nread);
+            }
 
-			final Formatter f = new Formatter();
-			for (byte b : hash.digest()) {
-				f.format("%02X", b & 0xFF);
-			}
-			return new UID(algorithm, f.toString());
-		} catch (IOException e) {
-			return null;
-		} catch (NoSuchAlgorithmException e) {
-			return null;
-		} finally {
-			if (stream != null) {
-				try {
-					stream.close();
-				} catch (IOException e) {
-				}
-			}
-		}
-	}
+            final Formatter f = new Formatter();
+            for (byte b : hash.digest()) {
+                f.format("%02X", b & 0xFF);
+            }
+            return new UID(algorithm, f.toString());
+        } catch (IOException e) {
+            return null;
+        } catch (NoSuchAlgorithmException e) {
+            return null;
+        } finally {
+            if (stream != null) {
+                try {
+                    stream.close();
+                } catch (IOException e) {
+                }
+            }
+        }
+    }
 }

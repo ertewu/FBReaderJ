@@ -22,6 +22,7 @@ package org.geometerplus.zlibrary.text.model;
 import java.util.Map;
 
 public class ExtensionEntry {
+    
 	public final String Type;
 	public final Map<String,String> Data;
 

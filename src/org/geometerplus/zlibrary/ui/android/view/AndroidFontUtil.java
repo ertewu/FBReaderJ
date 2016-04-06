@@ -19,24 +19,30 @@
 
 package org.geometerplus.zlibrary.ui.android.view;
 
-import java.util.*;
-import java.io.*;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.FilenameFilter;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
+import java.util.TreeSet;
 
-import org.xml.sax.Attributes;
-import org.xml.sax.helpers.DefaultHandler;
-
-import android.content.res.AssetManager;
-import android.graphics.Typeface;
-
+import org.geometerplus.fbreader.Paths;
 import org.geometerplus.zlibrary.core.filesystem.ZLFile;
 import org.geometerplus.zlibrary.core.fonts.FileInfo;
 import org.geometerplus.zlibrary.core.fonts.FontEntry;
-import org.geometerplus.zlibrary.core.util.ZLTTFInfoDetector;
 import org.geometerplus.zlibrary.core.util.XmlUtil;
-
+import org.geometerplus.zlibrary.core.util.ZLTTFInfoDetector;
 import org.geometerplus.zlibrary.ui.android.library.ZLAndroidLibrary;
+import org.xml.sax.Attributes;
+import org.xml.sax.helpers.DefaultHandler;
 
-import org.geometerplus.fbreader.Paths;
+import android.graphics.Typeface;
 
 public final class AndroidFontUtil {
 	private static volatile Map<String,String[]> ourFontAssetMap;
@@ -76,7 +82,8 @@ public final class AndroidFontUtil {
 		if (ourFileSet == null || forceReload) {
 			final HashSet<File> fileSet = new HashSet<File>();
 			final FilenameFilter filter = new FilenameFilter() {
-				public boolean accept(File dir, String name) {
+				@Override
+                public boolean accept(File dir, String name) {
 					if (name.startsWith(".")) {
 						return false;
 					}

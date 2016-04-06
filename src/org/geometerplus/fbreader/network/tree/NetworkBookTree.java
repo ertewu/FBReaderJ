@@ -19,60 +19,61 @@
 
 package org.geometerplus.fbreader.network.tree;
 
+import org.geometerplus.fbreader.network.NetworkBookItem;
+import org.geometerplus.fbreader.network.NetworkTree;
 import org.geometerplus.zlibrary.core.image.ZLImage;
 
-import org.geometerplus.fbreader.network.*;
-
 public class NetworkBookTree extends NetworkTree {
-	public final NetworkBookItem Book;
 
-	private final boolean myShowAuthors;
+    public final NetworkBookItem Book;
 
-	public NetworkBookTree(NetworkTree parent, NetworkBookItem book, boolean showAuthors) {
-		super(parent);
-		Book = book;
-		myShowAuthors = showAuthors;
-	}
+    private final boolean myShowAuthors;
 
-	NetworkBookTree(NetworkTree parent, NetworkBookItem book, int position, boolean showAuthors) {
-		super(parent, position);
-		Book = book;
-		myShowAuthors = showAuthors;
-	}
+    public NetworkBookTree(NetworkTree parent, NetworkBookItem book, boolean showAuthors) {
+        super(parent);
+        Book = book;
+        myShowAuthors = showAuthors;
+    }
 
-	@Override
-	protected boolean canUseParentCover() {
-		return false;
-	}
+    NetworkBookTree(NetworkTree parent, NetworkBookItem book, int position, boolean showAuthors) {
+        super(parent, position);
+        Book = book;
+        myShowAuthors = showAuthors;
+    }
 
-	@Override
-	public String getName() {
-		return Book.Title.toString();
-	}
+    @Override
+    protected boolean canUseParentCover() {
+        return false;
+    }
 
-	@Override
-	public String getSummary() {
-		if (!myShowAuthors && Book.Authors.size() < 2) {
-			return null;
-		}
-		StringBuilder builder = new StringBuilder();
-		int count = 0;
-		for (NetworkBookItem.AuthorData author: Book.Authors) {
-			if (count++ > 0) {
-				builder.append(",  ");
-			}
-			builder.append(author.DisplayName);
-		}
-		return builder.toString();
-	}
+    @Override
+    public String getName() {
+        return Book.Title.toString();
+    }
 
-	@Override
-	protected ZLImage createCover() {
-		return createCover(Book, true);
-	}
+    @Override
+    public String getSummary() {
+        if (!myShowAuthors && Book.Authors.size() < 2) {
+            return null;
+        }
+        StringBuilder builder = new StringBuilder();
+        int count = 0;
+        for (NetworkBookItem.AuthorData author : Book.Authors) {
+            if (count++ > 0) {
+                builder.append(",  ");
+            }
+            builder.append(author.DisplayName);
+        }
+        return builder.toString();
+    }
 
-	@Override
-	protected String getStringId() {
-		return Book.getStringId();
-	}
+    @Override
+    protected ZLImage createCover() {
+        return createCover(Book, true);
+    }
+
+    @Override
+    protected String getStringId() {
+        return Book.getStringId();
+    }
 }

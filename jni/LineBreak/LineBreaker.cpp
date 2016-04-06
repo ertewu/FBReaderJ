@@ -36,6 +36,7 @@ void Java_org_vimgadgets_linebreak_LineBreaker_setLineBreaksForCharArray(JNIEnv 
 	const jchar* start = dataArray + offset;
 	const jchar* end = start + length;
 	for (const jchar* ptr = start; ptr < end; ++ptr) {
+//0xAD是哪个字母?
 		if (*ptr == (jchar)0xAD) {
 			breaksArray[ptr - start] = LINEBREAK_NOBREAK;
 		}

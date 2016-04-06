@@ -21,14 +21,14 @@ package org.geometerplus.android.fbreader.covers;
 
 import java.util.concurrent.Future;
 
-import android.widget.ImageView;
-import android.graphics.Bitmap;
-
+import org.geometerplus.fbreader.tree.FBTree;
 import org.geometerplus.zlibrary.core.image.ZLImageProxy;
 
-import org.geometerplus.fbreader.tree.FBTree;
+import android.graphics.Bitmap;
+import android.widget.ImageView;
 
-class CoverHolder {
+ class CoverHolder {
+     
 	private final CoverManager myManager;
 	final ImageView CoverView;
 	volatile FBTree.Key Key;
@@ -69,7 +69,8 @@ class CoverHolder {
 			}
 		}
 
-		public void run() {
+		@Override
+        public void run() {
 			synchronized (CoverHolder.this) {
 				try {
 					if (coverSyncRunnable != this) {
@@ -112,7 +113,8 @@ class CoverHolder {
 			}
 		}
 
-		public void run() {
+		@Override
+        public void run() {
 			synchronized (CoverHolder.this) {
 				if (coverBitmapRunnable != this) {
 					return;

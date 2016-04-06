@@ -19,125 +19,128 @@
 
 package org.geometerplus.android.fbreader.util;
 
-import java.util.*;
+import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
 
-import android.app.Activity;
-import android.app.Service;
-import android.content.*;
-import android.os.IBinder;
-
+import org.geometerplus.android.fbreader.formatPlugin.CoverReader;
+import org.geometerplus.android.fbreader.formatPlugin.PluginUtil;
+import org.geometerplus.fbreader.formats.ExternalFormatPlugin;
+import org.geometerplus.fbreader.formats.PluginImage;
 import org.geometerplus.zlibrary.core.image.ZLImageProxy;
 import org.geometerplus.zlibrary.core.image.ZLImageSelfSynchronizableProxy;
 import org.geometerplus.zlibrary.ui.android.image.ZLAndroidImageManager;
 import org.geometerplus.zlibrary.ui.android.image.ZLBitmapImage;
 
-import org.geometerplus.fbreader.formats.ExternalFormatPlugin;
-import org.geometerplus.fbreader.formats.PluginImage;
-import org.geometerplus.android.fbreader.formatPlugin.PluginUtil;
-import org.geometerplus.android.fbreader.formatPlugin.CoverReader;
+import android.app.Activity;
+import android.app.Service;
+import android.content.ComponentName;
+import android.content.Context;
+import android.content.ServiceConnection;
+import android.os.IBinder;
 
 public class AndroidImageSynchronizer implements ZLImageProxy.Synchronizer {
-	private static final class Connection implements ServiceConnection {
-		private final ExternalFormatPlugin myPlugin;
-		private volatile CoverReader Reader;
-		private final List<Runnable> myPostActions = new LinkedList<Runnable>();
+    private static final class Connection implements ServiceConnection {
+        private final ExternalFormatPlugin myPlugin;
+        private volatile CoverReader Reader;
+        private final List<Runnable> myPostActions = new LinkedList<Runnable>();
 
-		Connection(ExternalFormatPlugin plugin) {
-			myPlugin = plugin;
-		}
+        Connection(ExternalFormatPlugin plugin) {
+            myPlugin = plugin;
+        }
 
-		synchronized void runOrAddAction(Runnable action) {
-			if (Reader != null) {
-				new Thread(action).start();
-			} else {
-				myPostActions.add(action);
-			}
-		}
+        synchronized void runOrAddAction(Runnable action) {
+            if (Reader != null) {
+                new Thread(action).start();
+            } else {
+                myPostActions.add(action);
+            }
+        }
 
-		public synchronized void onServiceConnected(ComponentName className, IBinder binder) {
-			Reader = CoverReader.Stub.asInterface(binder);
-			for (Runnable action : myPostActions) {
-				try {
-					action.run();
-				} catch (Throwable t) {
-				}
-			}
-			myPostActions.clear();
-		}
+        @Override
+        public synchronized void onServiceConnected(ComponentName className, IBinder binder) {
+            Reader = CoverReader.Stub.asInterface(binder);
+            for (Runnable action : myPostActions) {
+                try {
+                    action.run();
+                } catch (Throwable t) {
+                }
+            }
+            myPostActions.clear();
+        }
 
-		public synchronized void onServiceDisconnected(ComponentName className) {
-			Reader = null;
-		}
-	}
+        @Override
+        public synchronized void onServiceDisconnected(ComponentName className) {
+            Reader = null;
+        }
+    }
 
-	private final Context myContext;
-	private final Map<ExternalFormatPlugin,Connection> myConnections =
-		new HashMap<ExternalFormatPlugin,Connection>();
+    private final Context myContext;
+    private final Map<ExternalFormatPlugin, Connection> myConnections = new HashMap<ExternalFormatPlugin, Connection>();
 
-	public AndroidImageSynchronizer(Activity activity) {
-		myContext = activity;
-	}
+    public AndroidImageSynchronizer(Activity activity) {
+        myContext = activity;
+    }
 
-	public AndroidImageSynchronizer(Service service) {
-		myContext = service;
-	}
+    public AndroidImageSynchronizer(Service service) {
+        myContext = service;
+    }
 
-	@Override
-	public void startImageLoading(ZLImageProxy image, Runnable postAction) {
-		final ZLAndroidImageManager manager = (ZLAndroidImageManager)ZLAndroidImageManager.Instance();
-		manager.startImageLoading(this, image, postAction);
-	}
+    @Override
+    public void startImageLoading(ZLImageProxy image, Runnable postAction) {
+        final ZLAndroidImageManager manager = (ZLAndroidImageManager) ZLAndroidImageManager.Instance();
+        manager.startImageLoading(this, image, postAction);
+    }
 
-	@Override
-	public void synchronize(ZLImageProxy image, final Runnable postAction) {
-		if (image.isSynchronized()) {
-			// TODO: also check if image is under synchronization
-			if (postAction != null) {
-				postAction.run();
-			}
-		} else if (image instanceof ZLImageSelfSynchronizableProxy) {
-			((ZLImageSelfSynchronizableProxy)image).synchronize();
-			if (postAction != null) {
-				postAction.run();
-			}
-		} else if (image instanceof PluginImage) {
-			final PluginImage pluginImage = (PluginImage)image;
-			final Connection connection = getConnection(pluginImage.Plugin);
-			connection.runOrAddAction(new Runnable() {
-				public void run() {
-					try {
-						pluginImage.setRealImage(new ZLBitmapImage(connection.Reader.readBitmap(pluginImage.File.getPath(), Integer.MAX_VALUE, Integer.MAX_VALUE)));
-					} catch (Throwable t) {
-						t.printStackTrace();
-					}
-					if (postAction != null) {
-						postAction.run();
-					}
-				}
-			});
-		} else {
-			throw new RuntimeException("Cannot synchronize " + image.getClass());
-		}
-	}
+    @Override
+    public void synchronize(ZLImageProxy image, final Runnable postAction) {
+        if (image.isSynchronized()) {
+            // TODO: also check if image is under synchronization
+            if (postAction != null) {
+                postAction.run();
+            }
+        } else if (image instanceof ZLImageSelfSynchronizableProxy) {
+            ((ZLImageSelfSynchronizableProxy) image).synchronize();
+            if (postAction != null) {
+                postAction.run();
+            }
+        } else if (image instanceof PluginImage) {
+            final PluginImage pluginImage = (PluginImage) image;
+            final Connection connection = getConnection(pluginImage.Plugin);
+            connection.runOrAddAction(new Runnable() {
+                @Override
+                public void run() {
+                    try {
+                        pluginImage.setRealImage(new ZLBitmapImage(connection.Reader.readBitmap(pluginImage.File.getPath(), Integer.MAX_VALUE,
+                                Integer.MAX_VALUE)));
+                    } catch (Throwable t) {
+                        t.printStackTrace();
+                    }
+                    if (postAction != null) {
+                        postAction.run();
+                    }
+                }
+            });
+        } else {
+            throw new RuntimeException("Cannot synchronize " + image.getClass());
+        }
+    }
 
-	public synchronized void clear() {
-		for (ServiceConnection connection : myConnections.values()) {
-			myContext.unbindService(connection);
-		}
-		myConnections.clear();
-	}
+    public synchronized void clear() {
+        for (ServiceConnection connection : myConnections.values()) {
+            myContext.unbindService(connection);
+        }
+        myConnections.clear();
+    }
 
-	private synchronized Connection getConnection(ExternalFormatPlugin plugin) {
-		Connection connection = myConnections.get(plugin);
-		if (connection == null) {
-			connection = new Connection(plugin);
-			myConnections.put(plugin, connection);
-			myContext.bindService(
-				PluginUtil.createIntent(plugin, PluginUtil.ACTION_CONNECT_COVER_SERVICE),
-				connection,
-				Context.BIND_AUTO_CREATE
-			);
-		}
-		return connection;
-	}
+    private synchronized Connection getConnection(ExternalFormatPlugin plugin) {
+        Connection connection = myConnections.get(plugin);
+        if (connection == null) {
+            connection = new Connection(plugin);
+            myConnections.put(plugin, connection);
+            myContext.bindService(PluginUtil.createIntent(plugin, PluginUtil.ACTION_CONNECT_COVER_SERVICE), connection, Context.BIND_AUTO_CREATE);
+        }
+        return connection;
+    }
 }

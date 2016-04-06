@@ -131,9 +131,11 @@ struct LineBreakPropertiesLang
  * Abstract function interface for #lb_get_next_char_utf8,
  * #lb_get_next_char_utf16, and #lb_get_next_char_utf32.
  */
+//typedef的函数指针用法:这竟然是一种定义了一种函数指针类型..太强大了  From:http://blog.csdn.net/qll125596718/article/details/6891881
 typedef utf32_t (*get_next_char_t)(const void *, size_t, size_t *);
 
 /* Declarations */
+//extern 说明这两个字段的实际定义在别的文件中(自然不可能是linebreakdef.c),在本工程中，定义是在linebreakdata.c中
 extern struct LineBreakProperties lb_prop_default[];
 extern struct LineBreakPropertiesLang lb_prop_lang_map[];
 

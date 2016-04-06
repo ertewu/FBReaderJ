@@ -19,14 +19,18 @@
 
 package org.geometerplus.fbreader.library;
 
-import java.util.*;
+import java.util.Collections;
+import java.util.LinkedList;
 
+import org.geometerplus.fbreader.book.Book;
+import org.geometerplus.fbreader.book.BookEvent;
+import org.geometerplus.fbreader.book.IBookCollection;
+import org.geometerplus.fbreader.book.Tag;
+import org.geometerplus.fbreader.tree.FBTree;
 import org.geometerplus.zlibrary.core.resources.ZLResource;
 
-import org.geometerplus.fbreader.book.*;
-import org.geometerplus.fbreader.tree.FBTree;
-
 public abstract class LibraryTree extends FBTree {
+    
 	public static ZLResource resource() {
 		return ZLResource.resource("library");
 	}

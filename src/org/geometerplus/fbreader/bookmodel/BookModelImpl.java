@@ -21,49 +21,51 @@ package org.geometerplus.fbreader.bookmodel;
 
 import java.util.HashMap;
 
-import org.geometerplus.zlibrary.core.image.*;
-
-import org.geometerplus.zlibrary.text.model.*;
-
 import org.geometerplus.fbreader.book.Book;
+import org.geometerplus.zlibrary.core.image.ZLImage;
+import org.geometerplus.zlibrary.text.model.CharStorage;
+import org.geometerplus.zlibrary.text.model.ZLTextModel;
 
 abstract class BookModelImpl extends BookModel {
-	protected CharStorage myInternalHyperlinks;
-	protected final HashMap<String,ZLImage> myImageMap = new HashMap<String,ZLImage>();
-	protected final HashMap<String,ZLTextModel> myFootnotes = new HashMap<String,ZLTextModel>();
+    
+    protected CharStorage myInternalHyperlinks;
+    
+    protected final HashMap<String, ZLImage> myImageMap = new HashMap<String, ZLImage>();
+    
+    protected final HashMap<String, ZLTextModel> myFootnotes = new HashMap<String, ZLTextModel>();
 
-	BookModelImpl(Book book) {
-		super(book);
-	}
+    BookModelImpl(Book book) {
+        super(book);
+    }
 
-	@Override
-	protected Label getLabelInternal(String id) {
-		final int len = id.length();
-		final int size = myInternalHyperlinks.size();
+    @Override
+    protected Label getLabelInternal(String id) {
+        final int len = id.length();
+        final int size = myInternalHyperlinks.size();
 
-		for (int i = 0; i < size; ++i) {
-			final char[] block = myInternalHyperlinks.block(i);
-			for (int offset = 0; offset < block.length; ) {
-				final int labelLength = (int)block[offset++];
-				if (labelLength == 0) {
-					break;
-				}
-				final int idLength = (int)block[offset + labelLength];
-				if ((labelLength != len) || !id.equals(new String(block, offset, labelLength))) {
-					offset += labelLength + idLength + 3;
-					continue;
-				}
-				offset += labelLength + 1;
-				final String modelId = (idLength > 0) ? new String(block, offset, idLength) : null;
-				offset += idLength;
-				final int paragraphNumber = (int)block[offset] + (((int)block[offset + 1]) << 16);
-				return new Label(modelId, paragraphNumber);
-			}
-		}
-		return null;
-	}
+        for (int i = 0; i < size; ++i) {
+            final char[] block = myInternalHyperlinks.block(i);
+            for (int offset = 0; offset < block.length;) {
+                final int labelLength = block[offset++];
+                if (labelLength == 0) {
+                    break;
+                }
+                final int idLength = block[offset + labelLength];
+                if ((labelLength != len) || !id.equals(new String(block, offset, labelLength))) {
+                    offset += labelLength + idLength + 3;
+                    continue;
+                }
+                offset += labelLength + 1;
+                final String modelId = (idLength > 0) ? new String(block, offset, idLength) : null;
+                offset += idLength;
+                final int paragraphNumber = block[offset] + ((block[offset + 1]) << 16);
+                return new Label(modelId, paragraphNumber);
+            }
+        }
+        return null;
+    }
 
-	public void addImage(String id, ZLImage image) {
-		myImageMap.put(id, image);
-	}
+    public void addImage(String id, ZLImage image) {
+        myImageMap.put(id, image);
+    }
 }

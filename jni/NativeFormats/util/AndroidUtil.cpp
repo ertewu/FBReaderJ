@@ -323,4 +323,5 @@ jbyteArray AndroidUtil::createJavaByteArray(JNIEnv *env, const std::vector<jbyte
 	jbyteArray array = env->NewByteArray(size);
 	env->SetByteArrayRegion(array, 0, size, &data.front());
 	return array;
+
 }

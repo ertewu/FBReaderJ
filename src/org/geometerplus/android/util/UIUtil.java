@@ -19,181 +19,194 @@
 
 package org.geometerplus.android.util;
 
-import java.util.Queue;
 import java.util.LinkedList;
+import java.util.Queue;
+
+import org.geometerplus.zlibrary.core.application.ZLApplication;
+import org.geometerplus.zlibrary.core.resources.ZLResource;
 
 import android.app.Activity;
 import android.app.ProgressDialog;
 import android.content.Context;
 import android.os.Handler;
 import android.os.Message;
+import android.util.Log;
 import android.widget.Toast;
 
-import org.geometerplus.zlibrary.core.application.ZLApplication;
-import org.geometerplus.zlibrary.core.resources.ZLResource;
-
 public abstract class UIUtil {
-	private static final Object ourMonitor = new Object();
-	private static ProgressDialog ourProgress;
-	private static class Pair {
-		final Runnable Action;
-		final String Message;
+    private static final Object ourMonitor = new Object();
+    private static ProgressDialog ourProgress;
 
-		Pair(Runnable action, String message) {
-			Action = action;
-			Message = message;
-		}
-	};
-	private static final Queue<Pair> ourTaskQueue = new LinkedList<Pair>();
-	private static volatile Handler ourProgressHandler;
+    private static class Pair {
+        final Runnable Action;
+        final String Message;
 
-	private static boolean init() {
-		if (ourProgressHandler != null) {
-			return true;
-		}
-		try {
-			ourProgressHandler = new Handler() {
-				public void handleMessage(Message message) {
-					try {
-						synchronized (ourMonitor) {
-							if (ourTaskQueue.isEmpty()) {
-								ourProgress.dismiss();
-								ourProgress = null;
-							} else {
-								ourProgress.setMessage(ourTaskQueue.peek().Message);
-							}
-							ourMonitor.notify();
-						}
-					} catch (Exception e) {
-						e.printStackTrace();
-						ourProgress = null;
-					}
-				}
-			};
-			return true;
-		} catch (Throwable t) {
-			t.printStackTrace();
-			return false;
-		}
-	}
+        Pair(Runnable action, String message) {
+            Action = action;
+            Message = message;
+        }
+    };
 
-	public static void wait(String key, String param, Runnable action, Context context) {
-		waitInternal(getWaitMessage(key).replace("%s", param), action, context);
-	}
+    private static final Queue<Pair> ourTaskQueue = new LinkedList<Pair>();
+    private static volatile Handler ourProgressHandler;
 
-	public static void wait(String key, Runnable action, Context context) {
-		waitInternal(getWaitMessage(key), action, context);
-	}
+    private static boolean init() {
+        if (ourProgressHandler != null) {
+            return true;
+        }
+        try {
+            ourProgressHandler = new Handler() {
+                @Override
+                public void handleMessage(Message message) {
+                    try {
+                        synchronized (ourMonitor) {
+                            if (ourTaskQueue.isEmpty()) {
+                                ourProgress.dismiss();
+                                ourProgress = null;
+                            } else {
+                                ourProgress.setMessage(ourTaskQueue.peek().Message);
+                            }
+                            ourMonitor.notify();
+                        }
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                        ourProgress = null;
+                    }
+                }
+            };
+            return true;
+        } catch (Throwable t) {
+            t.printStackTrace();
+            return false;
+        }
+    }
 
-	private static String getWaitMessage(String key) {
-		return ZLResource.resource("dialog").getResource("waitMessage").getResource(key).getValue();
-	}
+    public static void wait(String key, String param, Runnable action, Context context) {
+        waitInternal(getWaitMessage(key).replace("%s", param), action, context);
+    }
 
-	private static void waitInternal(String message, Runnable action, Context context) {
-		if (!init()) {
-			action.run();
-			return;
-		}
+    public static void wait(String key, Runnable action, Context context) {
+        waitInternal(getWaitMessage(key), action, context);
+    }
 
-		synchronized (ourMonitor) {
-			ourTaskQueue.offer(new Pair(action, message));
-			if (ourProgress == null) {
-				ourProgress = ProgressDialog.show(context, null, message, true, false);
-			} else {
-				return;
-			}
-		}
-		final ProgressDialog currentProgress = ourProgress;
-		new Thread(new Runnable() {
-			public void run() {
-				while (ourProgress == currentProgress && !ourTaskQueue.isEmpty()) {
-					Pair p = ourTaskQueue.poll();
-					p.Action.run();
-					synchronized (ourMonitor) {
-						ourProgressHandler.sendEmptyMessage(0);
-						try {
-							ourMonitor.wait();
-						} catch (InterruptedException e) {
-						}
-					}
-				}
-			}
-		}).start();
-	}
+    private static String getWaitMessage(String key) {
+        return ZLResource.resource("dialog").getResource("waitMessage").getResource(key).getValue();
+    }
 
-	public static ZLApplication.SynchronousExecutor createExecutor(final Activity activity, final String key) {
-		return new ZLApplication.SynchronousExecutor() {
-			private final ZLResource myResource =
-				ZLResource.resource("dialog").getResource("waitMessage");
-			private final String myMessage = myResource.getResource(key).getValue();
-			private volatile ProgressDialog myProgress;
+    private static void waitInternal(String message, Runnable action, Context context) {
+        if (!init()) {
+            action.run();
+            return;
+        }
 
-			public void execute(final Runnable action, final Runnable uiPostAction) {
-				activity.runOnUiThread(new Runnable() {
-					public void run() {
-						myProgress = ProgressDialog.show(activity, null, myMessage, true, false);
-						final Thread runner = new Thread() {
-							public void run() {
-								action.run();
-								activity.runOnUiThread(new Runnable() {
-									public void run() {
-										try {
-											myProgress.dismiss();
-											myProgress = null;
-										} catch (Exception e) {
-											e.printStackTrace();
-										}
-										if (uiPostAction != null) {
-											uiPostAction.run();
-										}
-									}
-								});
-							}
-						};
-						runner.setPriority(Thread.MAX_PRIORITY);
-						runner.start();
-					}
-				});
-			}
+        synchronized (ourMonitor) {
+            ourTaskQueue.offer(new Pair(action, message));
+            if (ourProgress == null) {
+                ourProgress = ProgressDialog.show(context, null, message, true, false);
+            } else {
+                return;
+            }
+        }
+        final ProgressDialog currentProgress = ourProgress;
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                while (ourProgress == currentProgress && !ourTaskQueue.isEmpty()) {
+                    Pair p = ourTaskQueue.poll();
+                    p.Action.run();
+                    synchronized (ourMonitor) {
+                        ourProgressHandler.sendEmptyMessage(0);
+                        try {
+                            ourMonitor.wait();
+                        } catch (InterruptedException e) {
+                        }
+                    }
+                }
+            }
+        }).start();
+    }
 
-			private void setMessage(final ProgressDialog progress, final String message) {
-				if (progress == null) {
-					return;
-				}
-				activity.runOnUiThread(new Runnable() {
-					public void run() {
-						progress.setMessage(message);
-					}
-				});
-			}
+    // 这只是一个Thread，里边有一个ProgressDialog
+    public static ZLApplication.SynchronousExecutor createExecutor(final Activity activity, final String key) {
 
-			public void executeAux(String key, Runnable runnable) {
-				setMessage(myProgress, myResource.getResource(key).getValue());
-				runnable.run();
-				setMessage(myProgress, myMessage);
-			}
-		};
-	}
+        return new ZLApplication.SynchronousExecutor() {
 
-	public static void showMessageText(final Activity activity, final String text) {
-		activity.runOnUiThread(new Runnable() {
-			public void run() {
-				Toast.makeText(activity, text, Toast.LENGTH_LONG).show();
-			}
-		});
-	}
+            private final ZLResource myResource = ZLResource.resource("dialog").getResource("waitMessage");
 
-	public static void showErrorMessage(Activity activity, String resourceKey) {
-		showMessageText(
-			activity,
-			ZLResource.resource("errorMessage").getResource(resourceKey).getValue()
-		);
-	}
+            private final String myMessage = myResource.getResource(key).getValue();
 
-	public static void showErrorMessage(Activity activity, String resourceKey, String parameter) {
-		showMessageText(
-			activity,
-			ZLResource.resource("errorMessage").getResource(resourceKey).getValue().replace("%s", parameter)
-		);
-	}
+            private volatile ProgressDialog myProgress;
+
+            @Override
+            public void execute(final Runnable action, final Runnable uiPostAction) {
+
+                activity.runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        myProgress = ProgressDialog.show(activity, null, myMessage, true, false);
+                        // 图书加载中，请等待
+                        Log.i("ZYStudio", "UIUtil.createExecutor msg is:" + myMessage);
+                        final Thread runner = new Thread() {
+                            @Override
+                            public void run() {
+                                action.run();
+                                activity.runOnUiThread(new Runnable() {
+                                    @Override
+                                    public void run() {
+                                        try {
+                                            myProgress.dismiss();
+                                            myProgress = null;
+                                        } catch (Exception e) {
+                                            e.printStackTrace();
+                                        }
+                                        if (uiPostAction != null) {
+                                            uiPostAction.run();
+                                        }
+                                    }
+                                });
+                            }
+                        };
+                        runner.setPriority(Thread.MAX_PRIORITY);
+                        runner.start();
+                    }
+                });
+            }
+
+            private void setMessage(final ProgressDialog progress, final String message) {
+                if (progress == null) {
+                    return;
+                }
+                activity.runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        progress.setMessage(message);
+                    }
+                });
+            }
+
+            @Override
+            public void executeAux(String key, Runnable runnable) {
+                setMessage(myProgress, myResource.getResource(key).getValue());
+                runnable.run();
+                setMessage(myProgress, myMessage);
+            }
+        };
+    }
+
+    public static void showMessageText(final Activity activity, final String text) {
+        activity.runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                Toast.makeText(activity, text, Toast.LENGTH_LONG).show();
+            }
+        });
+    }
+
+    public static void showErrorMessage(Activity activity, String resourceKey) {
+        showMessageText(activity, ZLResource.resource("errorMessage").getResource(resourceKey).getValue());
+    }
+
+    public static void showErrorMessage(Activity activity, String resourceKey, String parameter) {
+        showMessageText(activity, ZLResource.resource("errorMessage").getResource(resourceKey).getValue().replace("%s", parameter));
+    }
 }
